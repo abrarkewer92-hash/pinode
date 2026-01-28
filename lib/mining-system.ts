@@ -21,6 +21,10 @@ export interface APYTier {
   price: number
 }
 
+// Referral mining boost:
+// Each active referral increases mining power by +5 PI/day.
+export const REFERRAL_MINING_BONUS_PER_REFERRAL = 5
+
 export const APY_TIERS: APYTier[] = [
   {
     id: 0,
@@ -80,6 +84,13 @@ export class MiningCalculator {
     const tier = APY_TIERS[apyTierId]
     if (!tier) return APY_TIERS[0].baseSpeed
     return tier.baseSpeed
+  }
+
+  // Referral bonus is measured in PI/day and added on top of base speed.
+  // (Used by Mining UI / session logic.)
+  calculateReferralBonusPerDay(activeReferrals: number): number {
+    const count = Number.isFinite(activeReferrals) ? Math.max(0, activeReferrals) : 0
+    return count * REFERRAL_MINING_BONUS_PER_REFERRAL
   }
 
   getMiningSpeedPerSecond(apyTierId: number): number {

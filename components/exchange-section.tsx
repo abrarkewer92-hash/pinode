@@ -3,8 +3,10 @@
 import { useState, useMemo } from "react"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
 import { createTransaction } from "@/lib/supabase-client"
 import DepositHistory from "./deposit-history"
+import { ArrowLeftRight, Wallet, Coins } from "lucide-react"
 
 interface ExchangeSectionProps {
   bxtBalance: number
@@ -96,108 +98,189 @@ export default function ExchangeSection({
 
   return (
     <div className="space-y-4">
-      {/* Compact balance card (no heavy decoration/icons) */}
-      <Card className="border border-border bg-card/60 backdrop-blur-sm p-4 space-y-2">
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="text-xs text-muted-foreground">PiNode balance</p>
-            <p className="text-sm font-semibold text-foreground">
-              {Math.floor(pinodeBalance).toLocaleString()}{" "}
-              <span className="text-[11px] text-muted-foreground">PiNode</span>
+      {/* Header Card */}
+      <Card className="border border-white/10 bg-black/40 backdrop-blur-2xl p-4 space-y-3 shadow-[0_16px_45px_rgba(0,0,0,0.65)]">
+        <div className="flex items-center gap-3">
+          <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#a78bfa] to-[#8b5cf6] flex items-center justify-center">
+            <ArrowLeftRight className="w-6 h-6 text-white" />
+          </div>
+          <div className="flex-1">
+            <h2 className="text-lg font-semibold text-white">Swap PiNode</h2>
+            <p className="text-xs text-[#c9c3ff]">
+              Convert PiNode to PI Network
             </p>
           </div>
-          <div className="text-right">
-            <p className="text-xs text-muted-foreground">PI Network wallet</p>
-            <p className="text-sm font-semibold text-foreground">
+        </div>
+        <div className="grid grid-cols-2 gap-3 pt-2 border-t border-white/10">
+          <div>
+            <p className="text-[10px] text-[#a7a3ff] mb-1">PiNode Balance</p>
+            <p className="text-sm font-semibold text-white">
+              {Math.floor(pinodeBalance).toLocaleString()}{" "}
+              <span className="text-xs text-[#a7a3ff]">PiNode</span>
+            </p>
+          </div>
+          <div>
+            <p className="text-[10px] text-[#a7a3ff] mb-1">PI Network Wallet</p>
+            <p className="text-sm font-semibold text-white">
               {piNetworkWalletBalance.toFixed(4)}{" "}
-              <span className="text-[11px] text-muted-foreground">PI</span>
+              <span className="text-xs text-[#a7a3ff]">PI</span>
             </p>
           </div>
         </div>
       </Card>
 
-      {/* Simple alerts */}
+      {/* Alerts */}
       {error && (
-        <Card className="border border-destructive/40 bg-destructive/10 p-3">
-          <p className="text-xs font-medium text-destructive">{error}</p>
+        <Card className="border border-red-500/40 bg-red-500/10 backdrop-blur-2xl p-3 shadow-[0_16px_45px_rgba(0,0,0,0.65)]">
+          <p className="text-xs font-medium text-red-400">{error}</p>
         </Card>
       )}
 
       {success && (
-        <Card className="border border-emerald-400/40 bg-emerald-400/10 p-3">
+        <Card className="border border-emerald-500/40 bg-emerald-500/10 backdrop-blur-2xl p-3 shadow-[0_16px_45px_rgba(0,0,0,0.65)]">
           <p className="text-xs font-medium text-emerald-400">{success}</p>
         </Card>
       )}
 
-      {/* Main swap form (simple Friends-like style) */}
-      <Card className="border border-border bg-card/60 backdrop-blur-sm p-4 space-y-3">
-        <div>
-          <p className="text-sm font-semibold text-foreground mb-1">
+      {/* Main swap form - match Swap PiNode modal style */}
+      <Card className="border border-white/10 bg-black/40 backdrop-blur-2xl p-4 space-y-3 shadow-[0_16px_45px_rgba(0,0,0,0.65)]">
+        <div className="flex items-center gap-2 mb-2">
+          <Coins className="w-4 h-4 text-[#c9c3ff]" />
+          <p className="text-sm font-semibold text-white">
             Swap PiNode to PI Network
           </p>
-          <p className="text-[11px] text-muted-foreground">
-            Convert your mined PiNode into PI Network balance in your wallet.
-          </p>
         </div>
+        <p className="text-xs text-[#c9c3ff] mb-3">
+          Convert your mined PiNode into PI Network balance in your wallet.
+        </p>
 
-        <div className="space-y-2">
-          <label className="block text-xs font-semibold text-foreground mb-1">
-            PiNode amount to swap
-          </label>
-          <input
-            type="number"
-            min={0}
-            value={amountInput}
-            onChange={(e) => {
-              setAmountInput(e.target.value)
-              setError("")
-              setSuccess("")
-            }}
-            placeholder="Minimum 20 PiNode (≈ 1 PI)"
-            className="w-full px-3 py-2 rounded-lg bg-input border border-border text-xs text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-accent/40"
-          />
-          <div className="flex items-center justify-between">
-            <p className="text-[11px] text-muted-foreground">
-              Available:{" "}
-              <span className="font-semibold">
-                {Math.floor(pinodeBalance).toLocaleString()} PiNode
+        <div className="space-y-4">
+          {/* FROM card */}
+          <div className="space-y-2 rounded-2xl bg-black/40 border border-white/10 px-4 py-3">
+            <div className="flex items-center justify-between text-[11px] text-[#a7a3ff] mb-1">
+              <span>From</span>
+              <span className="flex items-center gap-1">
+                Balance:
+                <span className="text-white font-semibold">
+                  {Math.floor(pinodeBalance).toLocaleString()} PiNode
+                </span>
               </span>
-            </p>
-            <p className="text-[11px] text-muted-foreground">
-              Estimated:{" "}
-              <span className="font-semibold">
-                {piAmount > 0 ? piAmount.toFixed(4) : "0.0000"} PI Network
-              </span>
-            </p>
+            </div>
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2">
+                <div className="w-9 h-9 rounded-full bg-[#0b1220] border border-white/10 flex items-center justify-center">
+                  <img
+                    src="/pi/pinodelabs.png"
+                    alt="PiNode"
+                    className="w-6 h-6 object-contain"
+                  />
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-xs font-semibold text-white">PiNode</span>
+                  <span className="text-[10px] text-[#6b7280]">PINODE</span>
+                </div>
+              </div>
+              <div className="flex-1 text-right">
+                <Input
+                  type="number"
+                  min={0}
+                  value={amountInput}
+                  onChange={(e) => {
+                    setAmountInput(e.target.value)
+                    setError("")
+                    setSuccess("")
+                  }}
+                  placeholder="0.0"
+                  className="w-full bg-transparent border-none text-right text-lg font-semibold text-white placeholder:text-[#6b7280] focus-visible:ring-0 focus-visible:outline-none"
+                />
+                <div className="mt-1 flex justify-end gap-2 text-[10px] text-[#a7a3ff]">
+                  <button
+                    type="button"
+                    className="px-2 py-0.5 rounded-full bg-white/5 hover:bg-white/10"
+                    onClick={() => {
+                      setAmountInput(String(Math.floor(pinodeBalance)))
+                      setError("")
+                      setSuccess("")
+                    }}
+                  >
+                    Max
+                  </button>
+                </div>
+              </div>
+            </div>
           </div>
-        </div>
 
-        <Button
-          onClick={handleExchange}
-          disabled={
-            isExchanging ||
-            !amountInput ||
-            Number.parseFloat(amountInput || "0") < 20 ||
-            Number.parseFloat(amountInput || "0") > pinodeBalance
-          }
-          className="w-full text-xs font-semibold py-2.5 disabled:opacity-60 disabled:cursor-not-allowed"
-        >
-          {isExchanging ? "Processing exchange..." : "Swap now"}
-        </Button>
+          {/* Center swap icon */}
+          <div className="flex justify-center">
+            <div className="w-8 h-8 rounded-full bg-black/60 border border-white/10 flex items-center justify-center text-white text-sm">
+              ↕
+            </div>
+          </div>
+
+          {/* TO card */}
+          <div className="space-y-2 rounded-2xl bg-black/40 border border-white/10 px-4 py-3">
+            <div className="flex items-center justify-between text-[11px] text-[#a7a3ff] mb-1">
+              <span>To</span>
+              <span className="flex items-center gap-1">
+                Wallet:
+                <span className="text-white font-semibold">
+                  {piNetworkWalletBalance.toFixed(4)} PI
+                </span>
+              </span>
+            </div>
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2">
+                <div className="w-9 h-9 rounded-full bg-[#0b1220] border border-white/10 flex items-center justify-center">
+                  <img
+                    src="/pi/pinetwork.png"
+                    alt="PI Network"
+                    className="w-6 h-6 object-contain"
+                  />
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-xs font-semibold text-white">PI Network</span>
+                  <span className="text-[10px] text-[#6b7280]">PI</span>
+                </div>
+              </div>
+              <div className="flex-1 text-right">
+                <div className="text-lg font-semibold text-white">
+                  {piAmount > 0 ? piAmount.toFixed(4) : "0.0000"}
+                </div>
+                <div className="mt-1 text-[10px] text-[#a7a3ff]">Estimated output</div>
+              </div>
+            </div>
+          </div>
+
+          {/* Swap button */}
+          <Button
+            onClick={handleExchange}
+            disabled={
+              isExchanging ||
+              !amountInput ||
+              Number.parseFloat(amountInput || "0") < 20 ||
+              Number.parseFloat(amountInput || "0") > pinodeBalance
+            }
+            className="w-full bg-gradient-to-r from-[#22c55e] to-[#16a34a] hover:from-[#22c55e]/90 hover:to-[#16a34a]/90 text-white text-xs font-semibold py-2.5 disabled:opacity-60 disabled:cursor-not-allowed shadow-[0_0_25px_rgba(34,197,94,0.45)] hover:shadow-[0_0_35px_rgba(34,197,94,0.8)]"
+          >
+            {isExchanging ? "Processing swap..." : "Swap now"}
+          </Button>
+        </div>
       </Card>
 
-      {/* Short explanation card */}
-      <Card className="border-border bg-card/50 backdrop-blur-sm p-4 space-y-1.5">
-        <h4 className="text-sm font-semibold text-foreground">How this swap works</h4>
-        <p className="text-xs text-muted-foreground">
-          1. Enter the amount of PiNode you want to swap (minimum 20 PiNode).
-        </p>
-        <p className="text-xs text-muted-foreground">
-          2. 20 PiNode ≈ 1 PI Network (100 PiNode ≈ 5 PI Network).
-        </p>
-        <p className="text-xs text-muted-foreground">
-          3. After a successful swap, your PI Network wallet balance increases and your PiNode balance decreases.
-        </p>
+      {/* How it works */}
+      <Card className="border border-white/10 bg-black/40 backdrop-blur-2xl p-4 space-y-2 shadow-[0_16px_45px_rgba(0,0,0,0.65)]">
+        <h4 className="text-sm font-semibold text-white">How this swap works</h4>
+        <div className="space-y-1.5">
+          <p className="text-xs text-[#c9c3ff]">
+            1. Enter the amount of PiNode you want to swap (minimum 20 PiNode).
+          </p>
+          <p className="text-xs text-[#c9c3ff]">
+            2. 20 PiNode ≈ 1 PI Network (100 PiNode ≈ 5 PI Network).
+          </p>
+          <p className="text-xs text-[#c9c3ff]">
+            3. After a successful swap, your PI Network wallet balance increases and your PiNode balance decreases.
+          </p>
+        </div>
       </Card>
 
       {/* Swap history – simple list following same card style */}

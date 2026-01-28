@@ -8,6 +8,7 @@ import DepositSection from "@/components/deposit-section"
 import ReferralSection from "@/components/referral-section"
 import ExchangeSection from "@/components/exchange-section"
 import WalletAddressesSection from "@/components/wallet-addresses-section"
+import MissionsSection from "@/components/missions-section"
 import { getUserById, updateUserBalance } from "@/lib/supabase-client"
 import { getMiningSession } from "@/lib/supabase-client"
 import { miningCalculator } from "@/lib/mining-system"
@@ -223,6 +224,37 @@ export default function MiningDashboard({ user, onUpdateBalance, onLogout }: Min
     }
   }
 
+  // Best-effort: block right-click + common devtools shortcuts on this dashboard.
+  // Note: this CANNOT truly prevent inspecting the page; it only adds friction.
+  useEffect(() => {
+    const handleContextMenu = (e: MouseEvent) => {
+      e.preventDefault()
+    }
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // F12
+      if (e.key === "F12") {
+        e.preventDefault()
+      }
+      // Ctrl+Shift+I / Ctrl+Shift+J / Ctrl+Shift+C (DevTools)
+      if (e.ctrlKey && e.shiftKey && ["I", "J", "C"].includes(e.key.toUpperCase())) {
+        e.preventDefault()
+      }
+      // Ctrl+U (view source)
+      if (e.ctrlKey && e.key.toUpperCase() === "U") {
+        e.preventDefault()
+      }
+    }
+
+    document.addEventListener("contextmenu", handleContextMenu)
+    document.addEventListener("keydown", handleKeyDown)
+
+    return () => {
+      document.removeEventListener("contextmenu", handleContextMenu)
+      document.removeEventListener("keydown", handleKeyDown)
+    }
+  }, [])
+
   const formatPiAmount = (value: number) => {
     if (!Number.isFinite(value)) return "0"
     // Tampilkan hingga 11 desimal, lalu buang nol di belakang agar tidak dipaksa 0.00000000
@@ -416,9 +448,9 @@ export default function MiningDashboard({ user, onUpdateBalance, onLogout }: Min
           {activeTab === "wallet" && (
             <ReferralSection userId={user.id} onBonusEarned={handleBonusEarned} />
           )}
-          {/* Missions tab: Boost / deposit-related section (tanpa Withdraw PI Network) */}
+          {/* Missions tab: PiNode Airdrop Missions */}
           {activeTab === "referral" && (
-            <DepositSection userId={user.id} currentUSDTBalance={usdtBalance} onBalanceRefresh={refreshBalance} />
+            <MissionsSection userId={user.id} onBonusEarned={handleBonusEarned} />
           )}
           {/* Swap tab uses ExchangeSection (PiNode -> PI Network) */}
           {activeTab === "exchange" && (

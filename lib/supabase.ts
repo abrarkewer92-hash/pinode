@@ -127,6 +127,37 @@ export interface Database {
           updated_at?: string
         }
       }
+      user_missions: {
+        Row: {
+          id: string
+          user_id: string
+          mission_id: string
+          status: 'completed' | 'claimed'
+          reward: number
+          claimed_at: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          mission_id: string
+          status?: 'completed' | 'claimed'
+          reward?: number
+          claimed_at?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          mission_id?: string
+          status?: 'completed' | 'claimed'
+          reward?: number
+          claimed_at?: string | null
+          updated_at?: string
+        }
+      }
       package_purchases: {
         Row: {
           id: string

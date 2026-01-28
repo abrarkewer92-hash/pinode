@@ -249,6 +249,44 @@ export async function createReferral(referrerId: string, referredEmail: string, 
   return data
 }
 
+// User missions operations (PiNode Airdrop Missions)
+export async function getUserMissions(userId: string) {
+  const { data, error } = await supabase
+    .from('user_missions')
+    .select('*')
+    .eq('user_id', userId)
+    .order('created_at', { ascending: true })
+
+  if (error) throw error
+  return data || []
+}
+
+export async function upsertUserMission(
+  userId: string,
+  missionId: string,
+  status: 'completed' | 'claimed',
+  reward?: number,
+  claimedAt?: string | null,
+) {
+  const payload: Database['public']['Tables']['user_missions']['Insert'] = {
+    user_id: userId,
+    mission_id: missionId,
+    status,
+    reward,
+    claimed_at: claimedAt ?? null,
+  }
+
+  const { data, error } = await supabase
+    .from('user_missions')
+    .upsert(payload, {
+      onConflict: 'user_id,mission_id',
+    })
+    .select()
+
+  if (error) throw error
+  return data
+}
+
 export async function getUserByReferralCode(referralCode: string) {
   const { data, error } = await supabase
     .from('users')
@@ -574,7 +612,9 @@ export async function setPlatformSetting(key: string, value: string): Promise<vo
 
 export async function getMinWithdraw(): Promise<number> {
   const value = await getPlatformSetting('min_withdraw')
-  return value ? parseFloat(value) : 1 // Default to 1 USDT
+  const minValue = value ? parseFloat(value) : 100
+  // Ensure minimum is at least 100 PI
+  return minValue >= 100 ? minValue : 100
 }
 
 export async function setMinWithdraw(amount: number): Promise<void> {

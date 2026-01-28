@@ -131,10 +131,10 @@ export default function DepositHistory({ userId, mode = "all" }: DepositHistoryP
 
   return (
     <div className="space-y-2">
-      {/* Header tanpa tombol refresh & tanpa background card */}
+      {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h3 className="text-sm font-semibold text-foreground">
+          <h3 className="text-sm font-semibold text-white">
             {mode === "boost"
               ? "Boost History"
               : mode === "withdraw"
@@ -143,7 +143,7 @@ export default function DepositHistory({ userId, mode = "all" }: DepositHistoryP
               ? "Swap History"
               : "Transaction History"}
           </h3>
-          <p className="text-[11px] text-muted-foreground">
+          <p className="text-[11px] text-[#a7a3ff]">
             {mode === "boost"
               ? "Your PI Network Boost deposit requests"
               : mode === "withdraw"
@@ -155,13 +155,13 @@ export default function DepositHistory({ userId, mode = "all" }: DepositHistoryP
         </div>
       </div>
 
-      {/* State loading / kosong yang simple, tanpa card/background besar */}
+      {/* State loading / empty */}
       {loading && (
-        <p className="text-xs text-muted-foreground">Loading history...</p>
+        <p className="text-xs text-[#a7a3ff]">Loading history...</p>
       )}
 
       {!loading && !hasTransactions && (
-        <p className="text-xs text-muted-foreground">
+        <p className="text-xs text-[#a7a3ff]">
           {mode === "boost"
             ? "No boost history yet."
             : mode === "withdraw"
@@ -172,9 +172,9 @@ export default function DepositHistory({ userId, mode = "all" }: DepositHistoryP
         </p>
       )}
 
-      {/* Simple vertical list – card style mengikuti contoh (title, status pill, amount, time ago) */}
+      {/* Vertical list – card style mengikuti tema mining dashboard (glassmorphism) */}
       {!loading && hasTransactions && (
-      <div className="mt-1 space-y-2 overflow-y-auto pr-0.5 sm:pr-1">
+      <div className="mt-2 space-y-2 overflow-y-auto pr-0.5 sm:pr-1">
         {filteredTransactions.map((tx) => {
           const statusConfig = getStatusConfig(tx.status)
           const StatusIcon = statusConfig.icon
@@ -200,16 +200,16 @@ export default function DepositHistory({ userId, mode = "all" }: DepositHistoryP
           return (
             <div
               key={tx.id}
-              className="rounded-xl border border-border px-3 py-2.5 flex items-center justify-between gap-3"
+              className="rounded-2xl border border-white/10 bg-black/40 backdrop-blur-2xl px-3.5 py-2.5 flex items-center justify-between gap-3 shadow-[0_8px_28px_rgba(0,0,0,0.65)]"
             >
               {/* Left: icon + title + time */}
               <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-full bg-secondary/70 flex items-center justify-center">
-                  <ArrowUpRight className="w-4 h-4 text-muted-foreground" />
+                <div className="w-8 h-8 rounded-full bg-[#140f25] border border-[#4338ca]/50 flex items-center justify-center">
+                  <ArrowUpRight className="w-4 h-4 text-[#a5b4fc]" />
                 </div>
                 <div className="flex flex-col">
                   <div className="flex items-center gap-2">
-                    <span className="text-xs font-semibold text-foreground">{title}</span>
+                    <span className="text-xs font-semibold text-white">{title}</span>
                     <div
                       className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full border ${statusConfig.borderColor} ${statusConfig.bgColor}`}
                     >
@@ -219,7 +219,7 @@ export default function DepositHistory({ userId, mode = "all" }: DepositHistoryP
                       </span>
                     </div>
                   </div>
-                  <span className="text-[10px] text-muted-foreground mt-0.5">
+                  <span className="text-[10px] text-[#6b7280] mt-0.5">
                     {formatTimeAgo(tx.created_at)}
                   </span>
                 </div>
@@ -227,12 +227,12 @@ export default function DepositHistory({ userId, mode = "all" }: DepositHistoryP
 
               {/* Right: main amount & optional sub text */}
               <div className="text-right">
-                <div className="text-xs font-semibold text-purple-400">
+                <div className="text-xs font-semibold text-[#fbbf24]">
                   {mainAmountText}{" "}
-                  <span className="text-[10px] text-purple-300">PI</span>
+                  <span className="text-[10px] text-[#fde68a]">PI</span>
                 </div>
                 {subAmountText && (
-                  <div className="text-[10px] text-muted-foreground mt-0.5">
+                  <div className="text-[10px] text-[#9ca3af] mt-0.5">
                     {subAmountText}
                   </div>
                 )}

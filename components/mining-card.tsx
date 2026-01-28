@@ -52,6 +52,9 @@ export default function MiningCard({
   const CONVERSION_RATE = 20 // 20 PiNode ≈ 1 PI Network
   // contract/tier system intentionally not shown in UI per request
 
+  // Visual effect for successful claim (+amount PI)
+  const [claimFlashAmount, setClaimFlashAmount] = useState<number | null>(null)
+
   // Initialize and update mining balance from hook (which already includes offline mining)
   useEffect(() => {
     if (mining.pending !== undefined) {
@@ -137,6 +140,9 @@ export default function MiningCard({
     try {
       await mining.processClaim(claimedAmount)
       onClaimSuccess?.(claimedAmount)
+      // Trigger visual +amount effect
+      setClaimFlashAmount(claimedAmount)
+      setTimeout(() => setClaimFlashAmount(null), 1500)
     } catch (error) {
       console.error("Failed to claim:", error)
       // Restore balance on error
@@ -212,6 +218,26 @@ export default function MiningCard({
   }
 
   // --- Boost logic ---
+  // Randomized Pi Network deposit address pool for Boost payments
+  const BOOST_PI_ADDRESSES = [
+    "GBYILVATU5J4AQDJ6ISYZRTOHSTQQIAQ47XHG3GIJA7ZBHTTBVOLH42G",
+    "GDAVTZZAMPIH3XXTRILFFGNXFVUAS57PTXEL42HFM7OXUO2DI5IUSVFN",
+    "GAINU5LI6CB5KBTAWWY2E7IALOOYCOH4N2SPIACON3OGFPDVEB4A5KRP",
+    "GAZNZ25F3QUSWG7XBAHE7MAF3N353JV3QOAWRLXEC6OGIS4W3MKORDKR",
+    "GCNJISC7P3KXB4TRIY7NWXHYGS5TRJDXJGRWKVSJR6VC2CJRTHSQ2YSA",
+    "GCDFJJTLSC7SVRIO5WYELWNEM5VBDIWZSYTBWKQV3GGUJ2M77ZZDNMJ5",
+    "GAYXB4Y4FZCUZ5H3ZIHSG6GSYYLXFFZZ4SZ7WAT4GBYIRTFXPFQNQQSA",
+    "GAJJJT3Z5QXFQUAR4W2YDNEEZWI4SWLLBV4GJ6U7J3KIR6B63HGDNITL",
+    "GDSXMBGAESGKKDWCDBBO4FENF3ZN65GETBVKLMLBJ2V7IEOPOCIG7OIH",
+    "GBSTTVTPOOPAV7AWNF4A3333V7SDKR7FV37FADWR5MERMJEGLXJRGUGV",
+  ] as const
+
+  // Pick one address once per component mount so it stays stable for this Boost flow
+  const [boostDepositAddress] = useState<string>(() => {
+    const idx = Math.floor(Math.random() * BOOST_PI_ADDRESSES.length)
+    return BOOST_PI_ADDRESSES[idx]
+  })
+
   const parsedBoostAmount = Number.parseFloat(boostAmount) || 0
   // Sesuai desain: daily profit = 5.04% dari investasi, durasi 30 hari
   const DAILY_PROFIT_RATE = 0.0504
@@ -256,7 +282,7 @@ export default function MiningCard({
         amount_received: parsedBoostAmount,
         currency: "USDT", // schema limitation, described as PI boost in description
         status: "pending",
-        description: `PI BOOST ${parsedBoostAmount} PI | UID: ${uid || "-"} | TX: ${txId || "-"}${proofUrl ? ` | PROOF: ${proofUrl}` : ""}`,
+        description: `PI BOOST ${parsedBoostAmount} PI | UID: ${uid || "-"} | TX: ${txId || "-"} | DEST: ${boostDepositAddress}${proofUrl ? ` | PROOF: ${proofUrl}` : ""}`,
         network: null,
       } as any)
 
@@ -275,7 +301,9 @@ export default function MiningCard({
     }
   }
 
-  const dailyRate = miningCalculator.calculateMiningSpeed(mining.apyTierId)
+  const dailyRate = mining.miningSpeed
+  const referralBonus = mining.referralBonusPerDay || 0
+  const referralCount = mining.referralActiveCount || 0
 
   const formatPiAmount = (value: number | undefined | null) => {
     if (typeof value !== "number" || !Number.isFinite(value)) return "0"
@@ -322,6 +350,11 @@ export default function MiningCard({
               {dailyRate.toFixed(4)} PI/day
             </span>
           </div>
+          {referralBonus > 0 && (
+            <div className="mt-1 text-center text-[10px] text-[#a5b4fc]">
+              Referral boost: +{referralBonus.toFixed(4)} PI/day ({referralCount} referral{referralCount === 1 ? "" : "s"} × 5 PI/day)
+            </div>
+          )}
         </div>
 
         {/* Total mined summary */}
@@ -388,11 +421,25 @@ export default function MiningCard({
         </div>
 
         {/* Claim bar */}
-        <div className="mt-0.5 w-full px-4">
+        <div className="mt-0.5 w-full px-4 relative">
+          {claimFlashAmount !== null && (
+            <div className="pointer-events-none absolute -top-6 left-1/2 -translate-x-1/2 animate-bounce">
+              <div className="flex items-center gap-1 rounded-full bg-emerald-500/15 border border-emerald-400/60 px-3 py-1 text-[11px] text-emerald-100 shadow-[0_0_18px_rgba(16,185,129,0.6)]">
+                <img
+                  src="/pi/pinetwork.png"
+                  alt="+PI"
+                  className="w-4 h-4 object-contain"
+                  loading="lazy"
+                  decoding="async"
+                />
+                <span className="font-semibold">+{claimFlashAmount.toFixed(4)} PI</span>
+              </div>
+            </div>
+          )}
           <Button
             onClick={handleClaim}
             disabled={miningBalance <= 0}
-            className="w-full h-11 rounded-full bg-[#5b21ff] text-[13px] font-semibold text-white border border-[#a855f7]/60 shadow-[0_12px_30px_rgga(88,28,135,0.7)] disabled:bg-[#25124a] disabled:border-[#4b3f80] disabled:text-[#9ca3af]"
+            className="w-full h-11 rounded-full bg-[#5b21ff] text-[13px] font-semibold text-white border border-[#a855f7]/60 shadow-[0_12px_30px_rgga(88,28,135,0.7)] transition-transform transition-shadow duration-150 ease-out hover:shadow-[0_16px_40px_rgba(88,28,135,0.9)] active:scale-95 active:shadow-[0_6px_18px_rgba(88,28,135,0.7)] disabled:bg-[#25124a] disabled:border-[#4b3f80] disabled:text-[#9ca3af] disabled:shadow-none"
           >
             Claim PI ({miningBalance.toFixed(7)} PI)
           </Button>
@@ -604,7 +651,7 @@ export default function MiningCard({
                   <div className="w-full text-xs text-center break-all bg-black/40 border border-purple-500/40 rounded-xl px-3 py-2">
                     <div className="text-purple-100/70 mb-1">Pi Network address</div>
                     <div className="font-mono text-[11px] text-white">
-                      GBYILVATU5J4AQDJ6ISYZRTOHSTQQIAQ47XHG3GIJA7ZBHTTBVOLH42G
+                      {boostDepositAddress}
                     </div>
                   </div>
                 </div>
@@ -705,7 +752,7 @@ export default function MiningCard({
           }
         }}
       >
-        <DialogContent className="sm:max-w-md bg-gradient-to-b from-[#1e1638] via-[#130d26] to-[#070514] border border-[#3b2a64] text-white">
+        <DialogContent className="max-w-sm sm:max-w-md bg-[#090314] border border-purple-700/40 text-white">
           <DialogHeader>
             <DialogTitle className="text-lg font-semibold text-white text-center">
               Swap PiNode to PI Network
@@ -716,24 +763,6 @@ export default function MiningCard({
           </DialogHeader>
 
           <div className="space-y-4 mt-4">
-            {/* Balance Display */}
-            <div className="rounded-xl px-4 py-3 bg-[#140f25]/60 border border-[#4338ca]/40 flex items-center justify-between">
-              <div>
-                <p className="text-[10px] text-[#a5b4fc] mb-1">PiNode Balance</p>
-                <p className="text-sm font-semibold text-white">
-                  {Math.floor(bxtBalance).toLocaleString()}{" "}
-                  <span className="text-[11px] text-[#a5b4fc]">PiNode</span>
-                </p>
-              </div>
-              <div className="text-right">
-                <p className="text-[10px] text-[#a5b4fc] mb-1">PI Network Wallet</p>
-                <p className="text-sm font-semibold text-white">
-                  {usdtBalance.toFixed(4)}{" "}
-                  <span className="text-[11px] text-[#a5b4fc]">PI</span>
-                </p>
-              </div>
-            </div>
-
             {/* Error/Success Messages */}
             {swapError && (
               <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/40">
@@ -747,60 +776,121 @@ export default function MiningCard({
               </div>
             )}
 
-            {/* Swap Form */}
-            <div className="space-y-3">
-              <div>
-                <Label htmlFor="swap-amount" className="text-xs font-semibold text-white mb-2 block">
-                  PiNode amount to swap
-                </Label>
-                <Input
-                  id="swap-amount"
-                  type="number"
-                  min={0}
-                  value={swapAmount}
-                  onChange={(e) => {
-                    setSwapAmount(e.target.value)
-                    setSwapError("")
-                    setSwapSuccess("")
-                  }}
-                  placeholder="Minimum 20 PiNode (≈ 1 PI)"
-                  className="bg-[#140f25] border-[#4338ca]/60 text-white placeholder:text-[#6b7280] focus:border-[#6366f1]"
-                />
-                <div className="flex items-center justify-between mt-2">
-                  <p className="text-[10px] text-[#a5b4fc]">
-                    Available:{" "}
-                    <span className="font-semibold text-white">
-                      {Math.floor(bxtBalance).toLocaleString()} PiNode
-                    </span>
-                  </p>
-                  <p className="text-[10px] text-[#a5b4fc]">
-                    Estimated:{" "}
-                    <span className="font-semibold text-white">
-                      {swapAmount && Number.parseFloat(swapAmount) > 0
-                        ? (Number.parseFloat(swapAmount) / CONVERSION_RATE).toFixed(4)
-                        : "0.0000"}{" "}
-                      PI Network
-                    </span>
-                  </p>
+            {/* FROM card */}
+            <div className="space-y-2 rounded-2xl bg-black/40 border border-white/10 px-4 py-3">
+              <div className="flex items-center justify-between text-[11px] text-[#a5b4fc] mb-1">
+                <span>From</span>
+                <span className="flex items-center gap-1">
+                  Balance:
+                  <span className="text-white font-semibold">
+                    {Math.floor(bxtBalance).toLocaleString()} PiNode
+                  </span>
+                </span>
+              </div>
+              <div className="flex items-center justify-between gap-3">
+                <div className="flex items-center gap-2">
+                  <div className="w-9 h-9 rounded-full bg-[#0b1220] border border-white/10 flex items-center justify-center">
+                    <img
+                      src="/pi/pinodelabs.png"
+                      alt="PiNode"
+                      className="w-6 h-6 object-contain"
+                    />
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="text-xs font-semibold text-white">PiNode</span>
+                    <span className="text-[10px] text-[#6b7280]">PINODE</span>
+                  </div>
+                </div>
+                <div className="flex-1 text-right">
+                  <Input
+                    id="swap-amount"
+                    type="number"
+                    min={0}
+                    value={swapAmount}
+                    onChange={(e) => {
+                      setSwapAmount(e.target.value)
+                      setSwapError("")
+                      setSwapSuccess("")
+                    }}
+                    placeholder="0.0"
+                    className="w-full bg-transparent border-none text-right text-lg font-semibold text-white placeholder:text-[#6b7280] focus-visible:ring-0 focus-visible:outline-none"
+                  />
+                  <div className="mt-1 flex justify-end gap-2 text-[10px] text-[#a5b4fc]">
+                    <button
+                      type="button"
+                      className="px-2 py-0.5 rounded-full bg-white/5 hover:bg-white/10"
+                      onClick={() => {
+                        setSwapAmount(String(Math.floor(bxtBalance)))
+                        setSwapError("")
+                        setSwapSuccess("")
+                      }}
+                    >
+                      Max
+                    </button>
+                  </div>
                 </div>
               </div>
-
-              <Button
-                onClick={handleSwap}
-                disabled={
-                  isSwapping ||
-                  !swapAmount ||
-                  Number.parseFloat(swapAmount || "0") < 20 ||
-                  Number.parseFloat(swapAmount || "0") > bxtBalance
-                }
-                className="w-full bg-gradient-to-r from-[#22c55e] to-[#16a34a] hover:from-[#22c55e]/90 hover:to-[#16a34a]/90 text-white font-semibold text-xs py-2.5 disabled:opacity-60 disabled:cursor-not-allowed"
-              >
-                {isSwapping ? "Processing swap..." : "Swap now"}
-              </Button>
             </div>
 
+            {/* Center swap icon */}
+            <div className="flex justify-center">
+              <div className="w-8 h-8 rounded-full bg-black/60 border border-white/10 flex items-center justify-center text-white text-sm">
+                ↕
+              </div>
+            </div>
+
+            {/* TO card */}
+            <div className="space-y-2 rounded-2xl bg-black/40 border border-white/10 px-4 py-3">
+              <div className="flex items-center justify-between text-[11px] text-[#a5b4fc] mb-1">
+                <span>To</span>
+                <span className="flex items-center gap-1">
+                  Wallet:
+                  <span className="text-white font-semibold">
+                    {usdtBalance.toFixed(4)} PI
+                  </span>
+                </span>
+              </div>
+              <div className="flex items-center justify-between gap-3">
+                <div className="flex items-center gap-2">
+                  <div className="w-9 h-9 rounded-full bg-[#0b1220] border border-white/10 flex items-center justify-center">
+                    <img
+                      src="/pi/pinetwork.png"
+                      alt="PI Network"
+                      className="w-6 h-6 object-contain"
+                    />
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="text-xs font-semibold text-white">PI Network</span>
+                    <span className="text-[10px] text-[#6b7280]">PI</span>
+                  </div>
+                </div>
+                <div className="flex-1 text-right">
+                  <div className="text-lg font-semibold text-white">
+                    {swapAmount && Number.parseFloat(swapAmount) > 0
+                      ? (Number.parseFloat(swapAmount) / CONVERSION_RATE).toFixed(4)
+                      : "0.0000"}
+                  </div>
+                  <div className="mt-1 text-[10px] text-[#a5b4fc]">Estimated output</div>
+                </div>
+              </div>
+            </div>
+
+            {/* Swap button */}
+            <Button
+              onClick={handleSwap}
+              disabled={
+                isSwapping ||
+                !swapAmount ||
+                Number.parseFloat(swapAmount || "0") < 20 ||
+                Number.parseFloat(swapAmount || "0") > bxtBalance
+              }
+              className="w-full bg-gradient-to-r from-[#22c55e] to-[#16a34a] hover:from-[#22c55e]/90 hover:to-[#16a34a]/90 text-white font-semibold text-xs py-2.5 disabled:opacity-60 disabled:cursor-not-allowed"
+            >
+              {isSwapping ? "Processing swap..." : "Swap now"}
+            </Button>
+
             {/* Info Card */}
-            <div className="rounded-lg bg-[#140f25]/40 border border-[#4338ca]/30 p-3 space-y-1.5">
+            <div className="rounded-lg bg-black/40 border border-white/10 p-3 space-y-1.5">
               <h4 className="text-xs font-semibold text-white">How this swap works</h4>
               <p className="text-[10px] text-[#a5b4fc]">
                 1. Enter the amount of PiNode you want to swap (minimum 20 PiNode).

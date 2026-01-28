@@ -14,16 +14,20 @@ import {
   Search,
   Copy,
   Filter,
-  X
+  X,
+  Eye,
+  Wallet
 } from "lucide-react"
 import {
   getPendingTransactions,
   approveDeposit,
   approveWithdraw,
   rejectTransaction,
-  getAllTransactions
+  getAllTransactions,
+  getUserById
 } from "@/lib/supabase-client"
 import NodeNetworkBackground from "@/components/node-network-background"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog"
 
 interface TransactionWithUser {
   id: string
@@ -65,6 +69,9 @@ export default function AdminTransactions() {
   const [filterNetwork, setFilterNetwork] = useState<"all" | "TRC20" | "BEP20" | "ERC20" | "Polygon" | "Solana" | "TON">("all")
   const [filterStatus, setFilterStatus] = useState<"all" | "pending" | "completed" | "failed">("all")
   const [copiedAddress, setCopiedAddress] = useState<string | null>(null)
+  const [approvalModalOpen, setApprovalModalOpen] = useState(false)
+  const [selectedTransaction, setSelectedTransaction] = useState<TransactionWithUser | null>(null)
+  const [balancePreview, setBalancePreview] = useState<{current: number, new: number, currency: string} | null>(null)
 
   const loadPendingTransactions = async () => {
     try {
@@ -98,26 +105,61 @@ export default function AdminTransactions() {
     }
   }, [activeTab])
 
-  const handleApprove = async (transaction: TransactionWithUser) => {
+  const openApprovalModal = async (transaction: TransactionWithUser) => {
+    setSelectedTransaction(transaction)
+    
+    // Fetch current user balance for preview
     try {
-      setProcessingId(transaction.id)
+      const user = await getUserById(transaction.user_id)
+      if (user) {
+        const currency = transaction.currency === 'USDT' ? 'USDT' : 'BXT'
+        const currentBalance = currency === 'USDT' 
+          ? Number(user.usdt_balance || 0)
+          : Number(user.bxt_balance || 0)
+        
+        let newBalance = currentBalance
+        if (transaction.type === 'deposit') {
+          newBalance = currentBalance + transaction.amount
+        } else if (transaction.type === 'withdraw') {
+          newBalance = currentBalance - transaction.amount
+        }
+        
+        setBalancePreview({
+          current: currentBalance,
+          new: newBalance,
+          currency: currency
+        })
+      }
+    } catch (error) {
+      console.error("Failed to load balance preview:", error)
+    }
+    
+    setApprovalModalOpen(true)
+  }
+
+  const handleApprove = async () => {
+    if (!selectedTransaction) return
+
+    try {
+      setProcessingId(selectedTransaction.id)
       setError("")
       setSuccess("")
+      setApprovalModalOpen(false)
 
-      if (transaction.type === 'deposit') {
+      if (selectedTransaction.type === 'deposit') {
         await approveDeposit(
-          transaction.id,
-          transaction.user_id,
-          transaction.amount,
-          transaction.currency
+          selectedTransaction.id,
+          selectedTransaction.user_id,
+          selectedTransaction.amount,
+          selectedTransaction.currency
         )
         setSuccess(`Deposit approved. User balance updated.`)
-      } else if (transaction.type === 'withdraw') {
+      } else if (selectedTransaction.type === 'withdraw') {
         await approveWithdraw(
-          transaction.id,
-          transaction.user_id,
-          transaction.amount,
-          transaction.currency
+          selectedTransaction.id,
+          selectedTransaction.user_id,
+          selectedTransaction.amount,
+          selectedTransaction.currency
         )
         setSuccess(`Withdrawal approved. Balance deducted.`)
       }
@@ -135,6 +177,8 @@ export default function AdminTransactions() {
       setTimeout(() => setError(""), 5000)
     } finally {
       setProcessingId(null)
+      setSelectedTransaction(null)
+      setBalancePreview(null)
     }
   }
 
@@ -385,44 +429,46 @@ export default function AdminTransactions() {
       {/* Header with Tabs */}
       <div className="space-y-4">
         <div className="flex items-center justify-between flex-wrap gap-4">
-          <div className="flex gap-2 border-b border-border">
-            <button
-              onClick={() => {
-                setActiveTab("pending")
-                setFilterStatus("all")
-              }}
-              className={`px-4 py-2 rounded-t-lg transition-all ${
-                activeTab === "pending"
-                  ? "bg-primary/20 text-primary border-b-2 border-primary"
-                  : "text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              <div className="flex items-center gap-2">
-                <Clock className="w-4 h-4" />
-                Pending ({pendingTransactions.length})
-              </div>
-            </button>
-            <button
-              onClick={() => setActiveTab("all")}
-              className={`px-4 py-2 rounded-t-lg transition-all ${
-                activeTab === "all"
-                  ? "bg-primary/20 text-primary border-b-2 border-primary"
-                  : "text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              All Transactions ({allTransactions.length})
-            </button>
-          </div>
+          <h2 className="text-2xl font-bold text-white">Transaction Management</h2>
           <Button
             onClick={() => activeTab === "pending" ? loadPendingTransactions() : loadAllTransactions()}
             variant="outline"
             size="sm"
-            className="gap-2"
+            className="gap-2 bg-black/40 border-white/10 hover:bg-black/60 text-white"
             disabled={processingAll}
           >
             <RefreshCw className={`w-4 h-4 ${processingAll ? 'animate-spin' : ''}`} />
             Refresh
           </Button>
+        </div>
+        
+        <div className="flex gap-2 border-b border-white/10">
+          <button
+            onClick={() => {
+              setActiveTab("pending")
+              setFilterStatus("all")
+            }}
+            className={`px-4 py-2 rounded-t-lg transition-all ${
+              activeTab === "pending"
+                ? "bg-gradient-to-r from-[#fbbf24]/20 to-[#f59e0b]/20 text-[#fbbf24] border-b-2 border-[#fbbf24]"
+                : "text-[#a7a3ff] hover:text-white"
+            }`}
+          >
+            <div className="flex items-center gap-2">
+              <Clock className="w-4 h-4" />
+              Pending ({pendingTransactions.length})
+            </div>
+          </button>
+          <button
+            onClick={() => setActiveTab("all")}
+            className={`px-4 py-2 rounded-t-lg transition-all ${
+              activeTab === "all"
+                ? "bg-gradient-to-r from-[#fbbf24]/20 to-[#f59e0b]/20 text-[#fbbf24] border-b-2 border-[#fbbf24]"
+                : "text-[#a7a3ff] hover:text-white"
+            }`}
+          >
+            All Transactions ({allTransactions.length})
+          </button>
         </div>
 
         {/* Search and Filters */}
@@ -435,7 +481,7 @@ export default function AdminTransactions() {
               placeholder="Search by Transaction ID, Email, Sender Address, Amount..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-10 py-2 rounded-lg bg-input/50 border border-border text-sm focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/30"
+              className="w-full pl-10 pr-10 py-2 rounded-lg bg-black/60 border border-white/10 text-white placeholder-[#a7a3ff] text-sm focus:outline-none focus:border-[#fbbf24] focus:ring-2 focus:ring-[#fbbf24]/30"
             />
             {searchQuery && (
               <button
@@ -458,7 +504,7 @@ export default function AdminTransactions() {
             <select
               value={filterType}
               onChange={(e) => setFilterType(e.target.value as any)}
-              className="px-3 py-1.5 rounded-lg bg-input/50 border border-border text-xs focus:outline-none focus:border-primary"
+              className="px-3 py-1.5 rounded-lg bg-black/60 border border-white/10 text-white text-xs focus:outline-none focus:border-[#fbbf24]"
             >
               <option value="all">All Types</option>
               <option value="deposit">Deposit</option>
@@ -469,7 +515,7 @@ export default function AdminTransactions() {
             <select
               value={filterNetwork}
               onChange={(e) => setFilterNetwork(e.target.value as any)}
-              className="px-3 py-1.5 rounded-lg bg-input/50 border border-border text-xs focus:outline-none focus:border-primary"
+              className="px-3 py-1.5 rounded-lg bg-black/60 border border-white/10 text-white text-xs focus:outline-none focus:border-[#fbbf24]"
             >
               <option value="all">All Networks</option>
               <option value="TRC20">TRC20</option>
@@ -485,7 +531,7 @@ export default function AdminTransactions() {
               <select
                 value={filterStatus}
                 onChange={(e) => setFilterStatus(e.target.value as any)}
-                className="px-3 py-1.5 rounded-lg bg-input/50 border border-border text-xs focus:outline-none focus:border-primary"
+                className="px-3 py-1.5 rounded-lg bg-black/60 border border-white/10 text-white text-xs focus:outline-none focus:border-[#fbbf24]"
               >
                 <option value="all">All Status</option>
                 <option value="pending">Pending</option>
@@ -513,7 +559,7 @@ export default function AdminTransactions() {
             )}
 
             {/* Results Count */}
-            <div className="ml-auto text-xs text-muted-foreground">
+            <div className="ml-auto text-xs text-[#a7a3ff]">
               Showing {transactionsToShow.length} of {activeTab === "pending" ? pendingTransactions.length : allTransactions.length} transactions
             </div>
           </div>
@@ -521,8 +567,8 @@ export default function AdminTransactions() {
 
         {/* Bulk Actions - Only show for pending transactions */}
         {activeTab === "pending" && pendingTransactions.length > 0 && (
-          <div className="flex items-center gap-2 p-3 rounded-lg bg-card/50 border border-border">
-            <span className="text-sm text-muted-foreground font-medium">Bulk Actions:</span>
+          <div className="flex items-center gap-2 p-3 rounded-lg bg-black/40 border border-white/10 backdrop-blur-2xl">
+            <span className="text-sm text-[#a7a3ff] font-medium">Bulk Actions:</span>
             <Button
               onClick={handleApproveAll}
               disabled={processingAll}
@@ -590,7 +636,7 @@ export default function AdminTransactions() {
       ) : (
         <div className="space-y-4">
           {transactionsToShow.map((transaction) => (
-            <Card key={transaction.id} className="border-2 border-border bg-card/50 backdrop-blur-sm p-6">
+            <Card key={transaction.id} className="border-2 border-white/10 bg-black/40 backdrop-blur-2xl p-6 shadow-[0_16px_45px_rgba(0,0,0,0.65)]">
               <div className="flex items-start justify-between">
                 <div className="flex-1">
                   <div className="flex items-center gap-3 mb-3">
@@ -796,7 +842,7 @@ export default function AdminTransactions() {
                 {transaction.status === 'pending' && (
                   <div className="flex flex-col gap-2 ml-4">
                     <Button
-                      onClick={() => handleApprove(transaction)}
+                      onClick={() => openApprovalModal(transaction)}
                       disabled={processingId === transaction.id || processingAll}
                       className="bg-green-500 hover:bg-green-600 text-white gap-2"
                       size="sm"
@@ -804,9 +850,9 @@ export default function AdminTransactions() {
                       {processingId === transaction.id || processingAll ? (
                         <RefreshCw className="w-4 h-4 animate-spin" />
                       ) : (
-                        <CheckCircle className="w-4 h-4" />
+                        <Eye className="w-4 h-4" />
                       )}
-                      Approve
+                      Review & Approve
                     </Button>
                     <Button
                       onClick={() => handleReject(transaction)}
@@ -829,6 +875,139 @@ export default function AdminTransactions() {
           ))}
         </div>
       )}
+
+      {/* Approval Modal */}
+      <Dialog open={approvalModalOpen} onOpenChange={setApprovalModalOpen}>
+        <DialogContent className="bg-black/95 border-white/10 backdrop-blur-2xl max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="text-white text-xl flex items-center gap-2">
+              <CheckCircle className="w-5 h-5 text-green-400" />
+              Review Transaction Approval
+            </DialogTitle>
+            <DialogDescription className="text-[#c9c3ff]">
+              Please review all details before approving this transaction
+            </DialogDescription>
+          </DialogHeader>
+
+          {selectedTransaction && (
+            <div className="space-y-4">
+              {/* Transaction Details */}
+              <div className="p-4 rounded-lg bg-black/60 border border-white/10">
+                <h4 className="text-sm font-semibold text-white mb-3">Transaction Details</h4>
+                <div className="grid grid-cols-2 gap-3 text-sm">
+                  <div>
+                    <span className="text-[#a7a3ff]">Type:</span>
+                    <span className="ml-2 text-white font-semibold capitalize">{selectedTransaction.type}</span>
+                  </div>
+                  <div>
+                    <span className="text-[#a7a3ff]">Amount:</span>
+                    <span className="ml-2 text-white font-semibold">
+                      {selectedTransaction.amount.toLocaleString()} {selectedTransaction.currency}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-[#a7a3ff]">User:</span>
+                    <span className="ml-2 text-white">{selectedTransaction.users?.email || selectedTransaction.user_id}</span>
+                  </div>
+                  {selectedTransaction.network && (
+                    <div>
+                      <span className="text-[#a7a3ff]">Network:</span>
+                      <span className="ml-2 text-white">{selectedTransaction.network}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Balance Preview */}
+              {balancePreview && (
+                <div className="p-4 rounded-lg bg-gradient-to-r from-blue-500/10 to-cyan-500/10 border-2 border-blue-500/30">
+                  <h4 className="text-sm font-semibold text-blue-400 mb-3 flex items-center gap-2">
+                    <Wallet className="w-4 h-4" />
+                    Balance Preview
+                  </h4>
+                  <div className="space-y-2">
+                    <div className="flex justify-between items-center p-2 rounded bg-black/40">
+                      <span className="text-[#a7a3ff] text-sm">Current Balance:</span>
+                      <span className="text-white font-semibold">
+                        {balancePreview.current.toFixed(4)} {balancePreview.currency}
+                      </span>
+                    </div>
+                    <div className="flex justify-center">
+                      <ArrowDownCircle className="w-4 h-4 text-blue-400" />
+                    </div>
+                    <div className="flex justify-between items-center p-2 rounded bg-green-500/10 border border-green-500/30">
+                      <span className="text-green-400 text-sm font-semibold">New Balance:</span>
+                      <span className="text-green-400 font-bold text-lg">
+                        {balancePreview.new.toFixed(4)} {balancePreview.currency}
+                      </span>
+                    </div>
+                    <div className="mt-2 p-2 rounded bg-yellow-500/10 border border-yellow-500/30">
+                      <p className="text-xs text-yellow-400">
+                        {selectedTransaction.type === 'deposit' 
+                          ? `✓ User will receive ${selectedTransaction.amount} ${selectedTransaction.currency}`
+                          : `⚠ User balance will be deducted by ${selectedTransaction.amount} ${selectedTransaction.currency}`
+                        }
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Warning for Withdraw */}
+              {selectedTransaction.type === 'withdraw' && balancePreview && balancePreview.new < 0 && (
+                <div className="p-4 rounded-lg bg-red-500/10 border-2 border-red-500/50">
+                  <div className="flex items-center gap-2 mb-2">
+                    <AlertCircle className="w-5 h-5 text-red-400" />
+                    <span className="text-red-400 font-semibold">Insufficient Balance!</span>
+                  </div>
+                  <p className="text-sm text-red-300">
+                    User's current balance ({balancePreview.current.toFixed(4)} {balancePreview.currency}) 
+                    is less than withdrawal amount ({selectedTransaction.amount} {selectedTransaction.currency}).
+                    This transaction cannot be approved.
+                  </p>
+                </div>
+              )}
+
+              {/* Description */}
+              <div className="p-3 rounded-lg bg-black/60 border border-white/10">
+                <p className="text-xs text-[#a7a3ff] mb-1">Description:</p>
+                <p className="text-sm text-white">{selectedTransaction.description}</p>
+              </div>
+            </div>
+          )}
+
+          <DialogFooter className="gap-2">
+            <Button
+              onClick={() => {
+                setApprovalModalOpen(false)
+                setSelectedTransaction(null)
+                setBalancePreview(null)
+              }}
+              variant="outline"
+              className="bg-black/40 border-white/10 text-white hover:bg-black/60"
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleApprove}
+              disabled={processingId === selectedTransaction?.id || (balancePreview?.new || 0) < 0}
+              className="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white gap-2 disabled:opacity-50"
+            >
+              {processingId === selectedTransaction?.id ? (
+                <>
+                  <RefreshCw className="w-4 h-4 animate-spin" />
+                  Processing...
+                </>
+              ) : (
+                <>
+                  <CheckCircle className="w-4 h-4" />
+                  Confirm Approval
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

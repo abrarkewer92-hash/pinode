@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react"
 import { miningCalculator, type APYTier } from "@/lib/mining-system"
-import { getMiningSession, createMiningSession, updateMiningSession } from "@/lib/supabase-client"
+import { getMiningSession, createMiningSession, updateMiningSession, getReferrals } from "@/lib/supabase-client"
 
 interface UseMiningSessionProps {
   userId: string
@@ -13,6 +13,8 @@ interface MiningState {
   apyTierId: number
   apyTier: APYTier | undefined
   miningSpeed: number
+  referralActiveCount: number
+  referralBonusPerDay: number
   pending: number
   totalMined: number
   lastClaimTime: Date
@@ -24,6 +26,14 @@ interface MiningState {
 export function useMiningSession({ userId, initialApyTierId = 0 }: UseMiningSessionProps) {
   const [state, setState] = useState<MiningState | null>(null)
   const [isLoading, setIsLoading] = useState(true)
+
+  const getEffectiveDailySpeed = useCallback((apyTierId: number, referralBonusPerDay: number) => {
+    return miningCalculator.calculateMiningSpeed(apyTierId) + (Number.isFinite(referralBonusPerDay) ? referralBonusPerDay : 0)
+  }, [])
+
+  const getEffectiveSpeedPerSecond = useCallback((apyTierId: number, referralBonusPerDay: number) => {
+    return getEffectiveDailySpeed(apyTierId, referralBonusPerDay) / 86400
+  }, [getEffectiveDailySpeed])
 
   // Load mining session from database and calculate offline mining
   useEffect(() => {
@@ -39,6 +49,17 @@ export function useMiningSession({ userId, initialApyTierId = 0 }: UseMiningSess
         const lastClaim = session.last_claim_time ? new Date(session.last_claim_time) : new Date()
         const apyTierId = session.apy_tier_id || 0
         const apyTier = miningCalculator.getAPYTier(apyTierId)
+
+        // Load referrals to compute mining speed boost (+5 PI/day per active referral)
+        let referralActiveCount = 0
+        try {
+          const referrals = await getReferrals(userId)
+          referralActiveCount = referrals.filter((r: any) => r.status === "active").length
+        } catch (e) {
+          // Non-blocking: if referral fetch fails, we just use 0 bonus
+          console.warn("Failed to load referrals for mining boost:", e)
+        }
+        const referralBonusPerDay = miningCalculator.calculateReferralBonusPerDay(referralActiveCount)
         
         // Check if contract is still active (2 days from purchase)
         // Miner #1 (tier 0) is free and never expires
@@ -75,7 +96,7 @@ export function useMiningSession({ userId, initialApyTierId = 0 }: UseMiningSess
           // Only mine until contract end time
           if (lastSyncTime < contractEndTimeMs) {
             const secondsUntilExpiry = Math.max(0, (contractEndTimeMs - lastSyncTime) / 1000)
-            const speedPerSecond = miningCalculator.getMiningSpeedPerSecond(apyTierId)
+            const speedPerSecond = getEffectiveSpeedPerSecond(apyTierId, referralBonusPerDay)
             const minedUntilExpiry = speedPerSecond * secondsUntilExpiry
             
             totalPending = balanceAtLastSync + minedUntilExpiry
@@ -87,13 +108,13 @@ export function useMiningSession({ userId, initialApyTierId = 0 }: UseMiningSess
           }
         } else {
           // Contract is active or tier 0 (free)
-          const speedPerSecond = miningCalculator.getMiningSpeedPerSecond(activeTierId)
+          const speedPerSecond = getEffectiveSpeedPerSecond(activeTierId, referralBonusPerDay)
           const minedSinceLastSync = speedPerSecond * secondsSinceSync
           totalPending = balanceAtLastSync + minedSinceLastSync
         }
         
         const activeTier = miningCalculator.getAPYTier(activeTierId)
-        const miningSpeed = miningCalculator.calculateMiningSpeed(activeTierId)
+        const miningSpeed = getEffectiveDailySpeed(activeTierId, referralBonusPerDay)
         
         // Don't auto-update tier to 0 - let user manually renew contract
         // This allows them to collect GOLD even after contract expires
@@ -102,6 +123,8 @@ export function useMiningSession({ userId, initialApyTierId = 0 }: UseMiningSess
           apyTierId: activeTierId,
           apyTier: activeTier,
           miningSpeed,
+          referralActiveCount,
+          referralBonusPerDay,
           pending: totalPending,
           totalMined: Number(session.total_mined || 0),
           lastClaimTime: lastClaim,
@@ -126,6 +149,7 @@ export function useMiningSession({ userId, initialApyTierId = 0 }: UseMiningSess
     if (!state) return
 
     let syncCounter = 0
+    let referralCounter = 0
     
     const interval = setInterval(async () => {
       const now = new Date()
@@ -134,6 +158,40 @@ export function useMiningSession({ userId, initialApyTierId = 0 }: UseMiningSess
       // Miner #1 (tier 0) is always active - no contract needed
       let activeTierId = state.apyTierId
       let pendingAmount = 0
+
+      // Periodically re-check referral count to keep mining power synced.
+      // If referral boost changes, we "lock in" current pending to avoid applying new speed retroactively.
+      referralCounter++
+      if (referralCounter >= 30) {
+        referralCounter = 0
+        try {
+          const referrals = await getReferrals(userId)
+          const activeCount = referrals.filter((r: any) => r.status === "active").length
+          const bonusPerDay = miningCalculator.calculateReferralBonusPerDay(activeCount)
+
+          if (activeCount !== state.referralActiveCount || bonusPerDay !== state.referralBonusPerDay) {
+            setState((prev) => {
+              if (!prev) return prev
+              // lock in mined amount up to now using previous speed
+              const secondsSinceLastSync = (now.getTime() - prev.lastSyncTime.getTime()) / 1000
+              const prevSpeedPerSecond = getEffectiveSpeedPerSecond(prev.apyTierId, prev.referralBonusPerDay)
+              const lockedPending = prev.miningBalance + (prevSpeedPerSecond * secondsSinceLastSync)
+
+              return {
+                ...prev,
+                referralActiveCount: activeCount,
+                referralBonusPerDay: bonusPerDay,
+                miningBalance: lockedPending,
+                lastSyncTime: now,
+                pending: lockedPending,
+                miningSpeed: getEffectiveDailySpeed(prev.apyTierId, bonusPerDay),
+              }
+            })
+          }
+        } catch (e) {
+          // ignore
+        }
+      }
       
       if (state.apyTierId > 0) {
         // Only check contract for paid miners (#2, #3, #4)
@@ -148,7 +206,7 @@ export function useMiningSession({ userId, initialApyTierId = 0 }: UseMiningSess
             if (lastSyncTime < contractEndTimeMs) {
               // Still mine until contract end
               const secondsUntilExpiry = Math.max(0, (contractEndTimeMs - lastSyncTime) / 1000)
-              const speedPerSecond = miningCalculator.getMiningSpeedPerSecond(state.apyTierId)
+              const speedPerSecond = getEffectiveSpeedPerSecond(state.apyTierId, state.referralBonusPerDay)
               pendingAmount = state.miningBalance + (speedPerSecond * secondsUntilExpiry)
               // Don't change tier yet - allow user to collect and renew
             } else {
@@ -164,13 +222,13 @@ export function useMiningSession({ userId, initialApyTierId = 0 }: UseMiningSess
         } else {
           // Contract is active - continue mining
           const secondsSinceLastSync = (now.getTime() - state.lastSyncTime.getTime()) / 1000
-          const speedPerSecond = miningCalculator.getMiningSpeedPerSecond(activeTierId)
+          const speedPerSecond = getEffectiveSpeedPerSecond(activeTierId, state.referralBonusPerDay)
           pendingAmount = state.miningBalance + (speedPerSecond * secondsSinceLastSync)
         }
       } else {
         // Miner #1 (tier 0) - always active, continue mining normally forever
         const secondsSinceLastSync = (now.getTime() - state.lastSyncTime.getTime()) / 1000
-        const speedPerSecond = miningCalculator.getMiningSpeedPerSecond(activeTierId)
+        const speedPerSecond = getEffectiveSpeedPerSecond(activeTierId, state.referralBonusPerDay)
         pendingAmount = state.miningBalance + (speedPerSecond * secondsSinceLastSync)
       }
 
@@ -181,7 +239,7 @@ export function useMiningSession({ userId, initialApyTierId = 0 }: UseMiningSess
           ...prev,
           apyTierId: activeTierId,
           apyTier: activeTier,
-          miningSpeed: miningCalculator.calculateMiningSpeed(activeTierId),
+          miningSpeed: getEffectiveDailySpeed(activeTierId, prev.referralBonusPerDay),
           pending: pendingAmount,
         }
       })
@@ -299,7 +357,9 @@ export function useMiningSession({ userId, initialApyTierId = 0 }: UseMiningSess
     return {
       apyTierId: initialApyTierId,
       apyTier: miningCalculator.getAPYTier(initialApyTierId),
-      miningSpeed: miningCalculator.calculateMiningSpeed(initialApyTierId),
+      miningSpeed: getEffectiveDailySpeed(initialApyTierId, 0),
+      referralActiveCount: 0,
+      referralBonusPerDay: 0,
       pending: 0,
       totalMined: 0,
       lastClaimTime: new Date(),
