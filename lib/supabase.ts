@@ -29,6 +29,8 @@ export interface Database {
           bxt_balance: number
           referral_code: string
           is_admin: boolean | null
+          telegram_id: string | null
+          telegram_username: string | null
           created_at: string
           updated_at: string
         }
@@ -41,6 +43,8 @@ export interface Database {
           bxt_balance?: number
           referral_code?: string
           is_admin?: boolean | null
+          telegram_id?: string | null
+          telegram_username?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -53,6 +57,8 @@ export interface Database {
           bxt_balance?: number
           referral_code?: string
           is_admin?: boolean | null
+          telegram_id?: string | null
+          telegram_username?: string | null
           updated_at?: string
         }
       }

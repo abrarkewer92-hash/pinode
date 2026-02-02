@@ -126,6 +126,15 @@ export function useReferralSystem({ userId }: UseReferralSystemProps) {
         referrals: updatedReferrals,
       }))
 
+      // Send Telegram notification
+      try {
+        const { notifyBalanceUpdate } = await import('@/lib/telegram-bot-helper')
+        await notifyBalanceUpdate(userId, 'referral', totalBonus)
+      } catch (telegramError) {
+        // Don't fail claim if Telegram notification fails
+        console.warn("Failed to send Telegram notification:", telegramError)
+      }
+
       return { 
         success: true, 
         message: `Successfully claimed ${totalBonus} PiNode (100 PiNode ≈ 5 PI Network)`, 

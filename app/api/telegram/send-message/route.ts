@@ -5,9 +5,10 @@ import { NextRequest, NextResponse } from "next/server"
 const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN
 const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID
 
-// Fallback values for development only (remove in production)
-const BOT_TOKEN = TELEGRAM_BOT_TOKEN || (process.env.NODE_ENV === "development" ? "8334524278:AAGReXjDBtsabtJv7DTVdzAlz9QENPy7DNo" : "")
-const CHAT_ID = TELEGRAM_CHAT_ID || (process.env.NODE_ENV === "development" ? "2114420424" : "")
+// Bot token: 8049598586:AAH5cF_tyF3M1Lr3gTYfXSoa2jvdMb_Q9Yk
+// Bot username: @pinodelabsbot
+const BOT_TOKEN = TELEGRAM_BOT_TOKEN || "8049598586:AAH5cF_tyF3M1Lr3gTYfXSoa2jvdMb_Q9Yk"
+const CHAT_ID = TELEGRAM_CHAT_ID || ""
 
 const TELEGRAM_API_URL = BOT_TOKEN ? `https://api.telegram.org/bot${BOT_TOKEN}/sendMessage` : null
 

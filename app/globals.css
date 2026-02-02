@@ -218,10 +218,10 @@
 
 @keyframes float {
   0%, 100% {
-    transform: translateY(0px);
+    transform: translate3d(0, 0, 0);
   }
   50% {
-    transform: translateY(-10px);
+    transform: translate3d(0, -10px, 0);
   }
 }
 
@@ -255,6 +255,7 @@
     background-position: 100% 50%;
   }
 }
+
 
 /* Node Network Background Animations - Optimized */
 .node-network-container {
@@ -332,13 +333,13 @@
   }
 }
 
-/* Legacy turbine animations (kept for backward compatibility) */
+/* Legacy turbine animations (kept for backward compatibility) – GPU accelerated */
 @keyframes turbine-rotate {
-  0% {
-    transform: rotate(0deg);
+  from {
+    transform: rotate(0deg) translateZ(0);
   }
-  100% {
-    transform: rotate(360deg);
+  to {
+    transform: rotate(360deg) translateZ(0);
   }
 }
 
@@ -356,6 +357,16 @@
   animation: turbine-rotate 18s linear infinite;
   will-change: transform;
   filter: drop-shadow(0 0 10px rgba(250, 204, 21, 0.65));
+}
+
+/* Mining dashboard: rotating turbine overlay (front-facing fan, centered) – GPU accelerated */
+.turbine-spin {
+  animation: turbine-rotate 8s linear infinite;
+  will-change: transform;
+  transform-origin: center center;
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
 }
 
 .turbine-wrapper {
@@ -584,4 +595,26 @@ div[style*="backgroundImage"] {
   -webkit-backface-visibility: hidden;
   backface-visibility: hidden;
   transform: translateZ(0);
+}
+
+/* Remove selection highlight on input */
+.no-selection::selection {
+  background: transparent;
+  color: inherit;
+}
+
+.no-selection::-moz-selection {
+  background: transparent;
+  color: inherit;
+}
+
+/* Remove spinner (up/down arrows) from number input */
+.no-spinner::-webkit-outer-spin-button,
+.no-spinner::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.no-spinner {
+  -moz-appearance: textfield;
 }

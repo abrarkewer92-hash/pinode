@@ -335,6 +335,15 @@ export function useMiningSession({ userId, initialApyTierId = 0 }: UseMiningSess
             miningBalance: 0,
           }
         })
+
+        // Send Telegram notification
+        try {
+          const { notifyMiningClaim } = await import('@/lib/telegram-bot-helper')
+          await notifyMiningClaim(userId, claimedAmount)
+        } catch (telegramError) {
+          // Don't fail claim if Telegram notification fails
+          console.warn("Failed to send Telegram notification:", telegramError)
+        }
       } catch (error) {
         console.error("Failed to process claim:", error)
       }

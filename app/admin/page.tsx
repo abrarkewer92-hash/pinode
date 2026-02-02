@@ -2,9 +2,15 @@
 
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
-import AdminDashboard from "@/components/admin-dashboard"
+import dynamic from "next/dynamic"
+import LoadingScreen from "@/components/loading-screen"
 import { getUserById } from "@/lib/supabase-client"
-import NodeNetworkBackground from "@/components/node-network-background"
+
+// Lazy load admin dashboard for faster initial render
+const AdminDashboard = dynamic(() => import("@/components/admin-dashboard"), {
+  loading: () => <LoadingScreen size="medium" showLogo={true} />,
+  ssr: false,
+})
 
 interface User {
   id: string
@@ -76,20 +82,7 @@ export default function AdminPage() {
   }
 
   if (isLoading) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-48 h-48 mx-auto rounded-lg flex items-center justify-center mb-4">
-            <NodeNetworkBackground
-              size={192}
-              showCenterLogo={true}
-              centerLogoUrl="/pi/pinetwork.png"
-              className="node-network-loading"
-            />
-          </div>
-        </div>
-      </div>
-    )
+    return <LoadingScreen size="medium" showLogo={true} />
   }
 
   if (!isAuthorized || !user) {

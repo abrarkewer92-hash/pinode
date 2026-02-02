@@ -1,41 +1,38 @@
 "use client"
 
-import { useEffect } from "react"
+import { useEffect, useState } from "react"
 import { useParams, useRouter } from "next/navigation"
-import NodeNetworkBackground from "@/components/node-network-background"
+import LoadingScreen from "@/components/loading-screen"
 
 export default function ReferralPage() {
   const params = useParams()
   const router = useRouter()
   const referralCode = params?.code as string
+  const [isRedirecting, setIsRedirecting] = useState(true)
 
   useEffect(() => {
-    if (referralCode) {
-      // Store referral code in localStorage
-      localStorage.setItem("referral_code", referralCode)
+    // Immediate redirect without delay for better UX
+    const redirect = () => {
+      if (referralCode) {
+        // Store referral code in localStorage
+        localStorage.setItem("referral_code", referralCode)
+      }
       
-      // Redirect to home page
-      router.push("/")
-    } else {
-      // If no code, just redirect to home
-      router.push("/")
+      // Use replace instead of push to avoid adding to history
+      router.replace("/")
     }
+
+    // Use requestAnimationFrame for smoother transition
+    const rafId = requestAnimationFrame(() => {
+      redirect()
+      // Hide loading after a brief moment
+      setTimeout(() => setIsRedirecting(false), 100)
+    })
+
+    return () => cancelAnimationFrame(rafId)
   }, [referralCode, router])
 
-  // Show loading while redirecting
-  return (
-    <div className="min-h-screen bg-background flex items-center justify-center">
-      <div className="text-center">
-        <div className="w-52 h-52 mx-auto rounded-full flex items-center justify-center">
-          <NodeNetworkBackground
-            size={208}
-            showCenterLogo={true}
-            centerLogoUrl="/pi/pinetwork.png"
-            className="node-network-loading"
-          />
-        </div>
-      </div>
-    </div>
-  )
+  // Show lightweight loading screen while redirecting
+  return <LoadingScreen size="medium" showLogo={true} />
 }
 

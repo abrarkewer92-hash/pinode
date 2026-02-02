@@ -60,6 +60,15 @@ export async function createUser(email: string, passwordHash?: string, referrerC
       if (referrer) {
         // Create referral record
         await createReferral(referrer.id, email, 0)
+        
+        // Send Telegram notification to referrer
+        try {
+          const { notifyReferralSuccess } = await import('@/lib/telegram-bot-helper')
+          await notifyReferralSuccess(referrer.id, email)
+        } catch (telegramError) {
+          // Don't fail user creation if Telegram notification fails
+          console.warn("Failed to send Telegram referral notification:", telegramError)
+        }
       }
     } catch (error) {
       // If referral code is invalid, just continue without creating referral

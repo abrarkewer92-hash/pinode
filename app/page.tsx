@@ -1,10 +1,22 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import MiningDashboard from "@/components/mining-dashboard"
-import LoginForm from "@/components/auth/login-form"
+import dynamic from "next/dynamic"
+import LoadingScreen from "@/components/loading-screen"
 import { getUserById } from "@/lib/supabase-client"
-import NodeNetworkBackground from "@/components/node-network-background"
+import { getUserByTelegramId, linkTelegramAccount } from "@/lib/telegram-bot-helper"
+import { useTelegramWebApp } from "@/lib/telegram-webapp"
+
+// Lazy load heavy components for faster initial render
+const MiningDashboard = dynamic(() => import("@/components/mining-dashboard"), {
+  loading: () => <LoadingScreen size="large" showLogo={true} />,
+  ssr: false,
+})
+
+const LoginForm = dynamic(() => import("@/components/auth/login-form"), {
+  loading: () => <LoadingScreen size="medium" showLogo={true} />,
+  ssr: false,
+})
 
 interface User {
   id: string
@@ -22,41 +34,102 @@ export default function Home() {
   const [user, setUser] = useState<User | null>(null)
   const [isLoading, setIsLoading] = useState(true)
 
-  // Check if user is already logged in on mount
+  // Preload critical images immediately
+  useEffect(() => {
+    const preloadImages = () => {
+      const images = [
+        "/pi/pinetwork.png",
+        "/pi/pinode.png",
+        "/pi/pinodelabs.png"
+      ]
+      images.forEach(src => {
+        const link = document.createElement('link')
+        link.rel = 'preload'
+        link.as = 'image'
+        link.href = src
+        document.head.appendChild(link)
+      })
+    }
+    preloadImages()
+  }, [])
+
+  // Check Telegram Web App
+  const { isInTelegram, userId: telegramUserId, startParam } = useTelegramWebApp()
+
+  // Check if user is already logged in on mount - optimized with early return
   useEffect(() => {
     const loadUser = async () => {
-      const storedUserId = localStorage.getItem("bxt_user_id")
-      if (storedUserId) {
+      // If opened from Telegram Web App, try to auto-link
+      if (isInTelegram && telegramUserId) {
         try {
-          const userData = await getUserById(storedUserId)
-          if (userData) {
+          const telegramUser = await getUserByTelegramId(telegramUserId)
+          if (telegramUser) {
+            // User found, auto-login
             setUser({
-              id: userData.id,
-              email: userData.email,
-              username: (userData as any).username || null,
-              usdt_balance: Number(userData.usdt_balance),
-              bxt_balance: Number(userData.bxt_balance),
-              referral_code: userData.referral_code,
-              created_at: userData.created_at,
-              is_admin: (userData as any).is_admin || false,
+              id: telegramUser.id,
+              email: telegramUser.email,
+              username: (telegramUser as any).username || null,
+              usdt_balance: Number(telegramUser.usdt_balance),
+              bxt_balance: Number(telegramUser.bxt_balance),
+              referral_code: telegramUser.referral_code,
+              created_at: telegramUser.created_at,
+              is_admin: (telegramUser as any).is_admin || false,
             })
             setIsAuthenticated(true)
-          } else {
-            // User not found in database (migrated from old Supabase)
-            localStorage.removeItem("bxt_user_id")
+            localStorage.setItem("bxt_user_id", telegramUser.id)
+            setIsLoading(false)
+            return
           }
         } catch (error) {
-          // Only log actual errors, not "not found" cases
-          if (error && typeof error === 'object' && 'code' in error && error.code !== 'PGRST116') {
-            console.error("Failed to load user:", error)
-          }
-          localStorage.removeItem("bxt_user_id")
+          console.warn("Telegram user not found, continuing with normal flow:", error)
         }
       }
-      setIsLoading(false)
+
+      const storedUserId = localStorage.getItem("bxt_user_id")
+      if (!storedUserId) {
+        setIsLoading(false)
+        return
+      }
+
+      try {
+        const userData = await getUserById(storedUserId)
+        if (userData) {
+          // If in Telegram and not linked, try to link
+          if (isInTelegram && telegramUserId && !(userData as any).telegram_id) {
+            try {
+              await linkTelegramAccount(userData.id, telegramUserId)
+            } catch (linkError) {
+              console.warn("Failed to link Telegram account:", linkError)
+            }
+          }
+
+          setUser({
+            id: userData.id,
+            email: userData.email,
+            username: (userData as any).username || null,
+            usdt_balance: Number(userData.usdt_balance),
+            bxt_balance: Number(userData.bxt_balance),
+            referral_code: userData.referral_code,
+            created_at: userData.created_at,
+            is_admin: (userData as any).is_admin || false,
+          })
+          setIsAuthenticated(true)
+        } else {
+          // User not found in database (migrated from old Supabase)
+          localStorage.removeItem("bxt_user_id")
+        }
+      } catch (error) {
+        // Only log actual errors, not "not found" cases
+        if (error && typeof error === 'object' && 'code' in error && error.code !== 'PGRST116') {
+          console.error("Failed to load user:", error)
+        }
+        localStorage.removeItem("bxt_user_id")
+      } finally {
+        setIsLoading(false)
+      }
     }
     loadUser()
-  }, [])
+  }, [isInTelegram, telegramUserId])
 
   const handleLogin = (userData: User) => {
     setUser(userData)
@@ -89,20 +162,7 @@ export default function Home() {
   }
 
   if (isLoading) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-52 h-52 mx-auto rounded-full flex items-center justify-center mb-4">
-            <NodeNetworkBackground
-              size={208}
-              showCenterLogo={true}
-              centerLogoUrl="/pi/pinetwork.png"
-              className="node-network-loading"
-            />
-          </div>
-        </div>
-      </div>
-    )
+    return <LoadingScreen size="large" showLogo={true} />
   }
 
   if (!isAuthenticated || !user) {
