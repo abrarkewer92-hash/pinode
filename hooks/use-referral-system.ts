@@ -146,10 +146,11 @@ export function useReferralSystem({ userId }: UseReferralSystemProps) {
     }
   }, [userId])
 
-  // Get referral link
+  // Get referral link – now returns Telegram bot link by default
   const getReferralLink = useCallback((): string => {
-    const baseUrl = getBaseUrl()
-    return `${baseUrl}/ref/${referralData.referralCode}`
+    // Telegram bot deep link so referrals masuk lewat @pinodelabsbot
+    if (!referralData.referralCode) return "https://t.me/pinodelabsbot"
+    return `https://t.me/pinodelabsbot?start=${referralData.referralCode}`
   }, [referralData.referralCode])
 
   // Get pending bonus (unclaimed active referrals)
