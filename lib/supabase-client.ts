@@ -25,6 +25,72 @@ export async function getUserByEmail(email: string) {
   return data
 }
 
+/**
+ * Create user from Telegram (no email required)
+ */
+export async function createUserFromTelegram(
+  telegramId: number,
+  telegramUsername?: string,
+  referrerCode?: string,
+  firstName?: string,
+  lastName?: string
+) {
+  const referralCode = `TG${Date.now()}_${Math.random().toString(36).substring(2, 8).toUpperCase()}`
+  
+  // Generate username from Telegram if not provided
+  const username = telegramUsername || `user_${telegramId.toString().slice(-6)}`
+  
+  const { data, error } = await supabase
+    .from('users')
+    .insert({
+      email: null, // Telegram-only user, no email
+      password_hash: null,
+      username: username,
+      telegram_id: telegramId.toString(),
+      telegram_username: telegramUsername || null,
+      usdt_balance: 0,
+      bxt_balance: 0,
+      referral_code: referralCode,
+    })
+    .select()
+    .single()
+
+  if (error) throw error
+  
+  // Create initial mining session
+  await supabase.from('mining_sessions').insert({
+    user_id: data.id,
+    apy_tier_id: 0,
+    mining_balance: 0,
+    total_mined: 0,
+    last_claim_time: new Date().toISOString(),
+    is_active: true,
+  })
+
+  // Handle referral if referrer code is provided
+  if (referrerCode) {
+    try {
+      const referrer = await getUserByReferralCode(referrerCode)
+      if (referrer) {
+        // Create referral record with Telegram ID
+        await createReferralFromTelegram(referrer.id, telegramId.toString(), telegramUsername || `user_${telegramId}`)
+        
+        // Send Telegram notification to referrer
+        try {
+          const { notifyReferralSuccess } = await import('@/lib/telegram-bot-helper')
+          await notifyReferralSuccess(referrer.id, `Telegram: @${telegramUsername || telegramId}`)
+        } catch (telegramError) {
+          console.warn("Failed to send Telegram referral notification:", telegramError)
+        }
+      }
+    } catch (error) {
+      console.warn("Invalid referral code:", referrerCode)
+    }
+  }
+
+  return data
+}
+
 export async function createUser(email: string, passwordHash?: string, referrerCode?: string, username?: string) {
   const referralCode = `${Date.now()}_${Math.random().toString(36).substring(2, 8).toUpperCase()}`
   
@@ -248,6 +314,26 @@ export async function createReferral(referrerId: string, referredEmail: string, 
     .insert({
       referrer_id: referrerId,
       referred_email: referredEmail,
+      status: 'active',
+      bonus_earned: bonusEarned,
+    })
+    .select()
+    .single()
+
+  if (error) throw error
+  return data
+}
+
+/**
+ * Create referral from Telegram user
+ */
+export async function createReferralFromTelegram(referrerId: string, referredTelegramId: string, referredTelegramUsername?: string, bonusEarned = 0) {
+  const { data, error } = await supabase
+    .from('referrals')
+    .insert({
+      referrer_id: referrerId,
+      referred_email: null, // Telegram-only referral
+      referred_telegram_id: referredTelegramId,
       status: 'active',
       bonus_earned: bonusEarned,
     })

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { sendTelegramMessage, getUserByTelegramId, getUserStats, linkTelegramAccount, TelegramUpdate } from '@/lib/telegram-bot-helper'
-import { getUserByEmail, createUser, getUserByReferralCode, createReferral } from '@/lib/supabase-client'
+import { getUserByEmail, createUser, getUserByReferralCode, createReferral, createUserFromTelegram, createReferralFromTelegram } from '@/lib/supabase-client'
 import { supabase } from '@/lib/supabase'
 
 const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || "8049598586:AAH5cF_tyF3M1Lr3gTYfXSoa2jvdMb_Q9Yk"
@@ -59,10 +59,10 @@ export async function POST(request: NextRequest) {
             )
         }
       } else {
-        // Handle regular messages (could be email for linking)
+        // Handle regular messages
         await sendTelegramMessage(
           chatId,
-          '👋 Hi! Use /help to see available commands.\n\nTo link your account, use: /link your@email.com'
+          '👋 Hi! Use /start to get started or /help to see all commands.\n\nYour account is created automatically when you first use the bot!'
         )
       }
     }
@@ -90,9 +90,71 @@ export async function POST(request: NextRequest) {
 }
 
 /**
- * Handle /start command
+ * Handle /start command - Auto-create user if not exists
  */
 async function handleStartCommand(chatId: number, from: any, args: string[]) {
+  // Check if user exists, if not create automatically
+  let user = await getUserByTelegramId(chatId)
+  const referralCode = args.length > 0 ? args[0] : undefined
+  
+  if (!user) {
+    // Auto-create user from Telegram
+    try {
+      user = await createUserFromTelegram(
+        chatId,
+        from.username,
+        referralCode,
+        from.first_name,
+        from.last_name
+      )
+      
+      await sendTelegramMessage(
+        chatId,
+        `✅ <b>Account Created!</b>\n\nWelcome to PiNode Labs, ${from.first_name}!\n\nYour account has been automatically created. You can now start mining and earning rewards!${referralCode ? `\n\n🎁 Referral code applied: <code>${referralCode}</code>` : ''}`
+      )
+    } catch (error) {
+      console.error('Failed to create user:', error)
+      await sendTelegramMessage(
+        chatId,
+        '❌ Failed to create account. Please try again later.'
+      )
+      return
+    }
+  } else if (referralCode && referralCode !== user.referral_code) {
+    // User exists but used referral code - apply referral
+    try {
+      const referrer = await getUserByReferralCode(referralCode)
+      if (referrer && referrer.id !== user.id) {
+        // Check if referral already exists
+        const { data: existingRef } = await supabase
+          .from('referrals')
+          .select('id')
+          .eq('referrer_id', referrer.id)
+          .eq('referred_telegram_id', chatId.toString())
+          .single()
+        
+        if (!existingRef) {
+          await createReferralFromTelegram(referrer.id, chatId.toString(), from.username)
+          
+          // Notify referrer
+          try {
+            const { notifyReferralSuccess } = await import('@/lib/telegram-bot-helper')
+            await notifyReferralSuccess(referrer.id, `Telegram: @${from.username || chatId}`)
+          } catch (e) {
+            console.warn('Failed to notify referrer:', e)
+          }
+          
+          await sendTelegramMessage(
+            chatId,
+            `🎁 <b>Referral Applied!</b>\n\nYou've been referred by someone! Both of you will earn rewards when you become active.`
+          )
+        }
+      }
+    } catch (error) {
+      console.warn('Failed to apply referral:', error)
+    }
+  }
+
   const welcomeMessage = `
 👋 <b>Welcome to PiNode Labs Bot!</b>
 
@@ -103,56 +165,32 @@ I'm @pinodelabsbot, your assistant for PiNode mining and referrals.
 /referral - Get your referral link and stats
 /balance - Check your balances
 /stats - View detailed statistics
-/link - Link your Telegram to your account
+/app - Open web app (optional)
 /help - Show help message
 
 <b>Quick Actions:</b>
 Use the buttons below to get started!
   `.trim()
 
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://minety.com'
-    const webAppUrl = `${baseUrl}?tgWebAppStartParam=${from.id}`
-    
-    // Get user to check if they have referral code
-    const user = await getUserByTelegramId(chatId)
-    let startParam = from.id.toString()
-    
-    if (user && user.referral_code) {
-      startParam = user.referral_code
-    }
-
-    const keyboard = {
-      inline_keyboard: [
-        [
-          {
-            text: '📱 Open Web App',
-            web_app: { url: `${baseUrl}?tgWebAppStartParam=${startParam}` },
-          },
-        ],
-        [
-          { text: '📊 My Stats', callback_data: 'get_stats' },
-          { text: '💰 Balance', callback_data: 'get_balance' },
-        ],
-        [
-          { text: '🎁 Referral Link', callback_data: 'get_referral_link' },
-        ],
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://pinode.space'
+  const referralLink = user ? `https://t.me/pinodelabsbot?start=${user.referral_code}` : `https://t.me/pinodelabsbot?start=${chatId}`
+  
+  const keyboard = {
+    inline_keyboard: [
+      [
+        { text: '🎁 My Referral Link', callback_data: 'get_referral_link' },
       ],
-    }
-
-  // Check if user has referral code in start command
-  if (args.length > 0) {
-    const referralCode = args[0]
-    const user = await getUserByTelegramId(chatId)
-    
-    if (!user) {
-      // User doesn't exist, prompt them to link account first
-      await sendTelegramMessage(
-        chatId,
-        `🔗 <b>Referral Code Detected!</b>\n\nTo use this referral code, please link your account first:\n\n/link your@email.com\n\nThen register on our website with this referral code: <code>${referralCode}</code>`,
-        { reply_markup: keyboard }
-      )
-      return
-    }
+      [
+        { text: '📊 My Stats', callback_data: 'get_stats' },
+        { text: '💰 Balance', callback_data: 'get_balance' },
+      ],
+      [
+        {
+          text: '📱 Open Web App',
+          web_app: { url: `${baseUrl}?tgWebAppStartParam=${user?.referral_code || chatId}` },
+        },
+      ],
+    ],
   }
 
   await sendTelegramMessage(chatId, welcomeMessage, { reply_markup: keyboard })
@@ -162,18 +200,24 @@ Use the buttons below to get started!
  * Handle /referral command
  */
 async function handleReferralCommand(chatId: number, from: any) {
-  const user = await getUserByTelegramId(chatId)
+  let user = await getUserByTelegramId(chatId)
 
+  // Auto-create if not exists
   if (!user) {
-    await sendTelegramMessage(
-      chatId,
-      '❌ Account not linked. Please link your account first:\n\n/link your@email.com'
-    )
-    return
+    try {
+      user = await createUserFromTelegram(chatId, from.username, undefined, from.first_name, from.last_name)
+    } catch (error) {
+      await sendTelegramMessage(chatId, '❌ Failed to create account. Please try /start first.')
+      return
+    }
   }
 
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://minety.com'
-  const referralLink = `${baseUrl}/ref/${user.referral_code}`
+  // Telegram bot referral link (direct to bot)
+  const telegramReferralLink = `https://t.me/pinodelabsbot?start=${user.referral_code}`
+  
+  // Web referral link (for web app)
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://pinode.space'
+  const webReferralLink = `${baseUrl}/ref/${user.referral_code}`
 
   const stats = await getUserStats(user.id)
   if (!stats) {
@@ -184,8 +228,11 @@ async function handleReferralCommand(chatId: number, from: any) {
   const message = `
 🎁 <b>Your Referral Program</b>
 
-🔗 <b>Referral Link:</b>
-<code>${referralLink}</code>
+🔗 <b>Telegram Referral Link:</b>
+<code>${telegramReferralLink}</code>
+
+🌐 <b>Web Referral Link:</b>
+<code>${webReferralLink}</code>
 
 📊 <b>Statistics:</b>
 👥 Total Referrals: ${stats.referrals.total}
@@ -196,24 +243,42 @@ async function handleReferralCommand(chatId: number, from: any) {
 💡 <b>How it works:</b>
 Share your referral link with friends. Each active friend gives you 100 PiNode (≈ 5 PI Network).
 
-Claim your bonus on the website!
+<b>Share via Telegram:</b>
+Tap the button below to share your referral link!
   `.trim()
 
-  await sendTelegramMessage(chatId, message)
+  const keyboard = {
+    inline_keyboard: [
+      [
+        {
+          text: '📤 Share Referral Link',
+          url: `https://t.me/share/url?url=${encodeURIComponent(telegramReferralLink)}&text=${encodeURIComponent('🎁 Join PiNode Labs and start mining PI! Use my referral link to get started!')}`,
+        },
+      ],
+      [
+        { text: '📊 View Stats', callback_data: 'get_stats' },
+        { text: '💰 Check Balance', callback_data: 'get_balance' },
+      ],
+    ],
+  }
+
+  await sendTelegramMessage(chatId, message, { reply_markup: keyboard })
 }
 
 /**
  * Handle /balance command
  */
 async function handleBalanceCommand(chatId: number, from: any) {
-  const user = await getUserByTelegramId(chatId)
+  let user = await getUserByTelegramId(chatId)
 
+  // Auto-create if not exists
   if (!user) {
-    await sendTelegramMessage(
-      chatId,
-      '❌ Account not linked. Please link your account first:\n\n/link your@email.com'
-    )
-    return
+    try {
+      user = await createUserFromTelegram(chatId, from.username, undefined, from.first_name, from.last_name)
+    } catch (error) {
+      await sendTelegramMessage(chatId, '❌ Failed to create account. Please try /start first.')
+      return
+    }
   }
 
   const stats = await getUserStats(user.id)
@@ -241,14 +306,16 @@ async function handleBalanceCommand(chatId: number, from: any) {
  * Handle /stats command
  */
 async function handleStatsCommand(chatId: number, from: any) {
-  const user = await getUserByTelegramId(chatId)
+  let user = await getUserByTelegramId(chatId)
 
+  // Auto-create if not exists
   if (!user) {
-    await sendTelegramMessage(
-      chatId,
-      '❌ Account not linked. Please link your account first:\n\n/link your@email.com'
-    )
-    return
+    try {
+      user = await createUserFromTelegram(chatId, from.username, undefined, from.first_name, from.last_name)
+    } catch (error) {
+      await sendTelegramMessage(chatId, '❌ Failed to create account. Please try /start first.')
+      return
+    }
   }
 
   const stats = await getUserStats(user.id)
@@ -397,8 +464,9 @@ You can:
  * Handle /help command
  */
 async function handleHelpCommand(chatId: number, from: any) {
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://minety.com'
-  const webAppUrl = `${baseUrl}?tgWebAppStartParam=${from.id}`
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://pinode.space'
+  let user = await getUserByTelegramId(chatId)
+  const webAppUrl = `${baseUrl}?tgWebAppStartParam=${user?.referral_code || from.id}`
 
   const helpMessage = `
 📖 <b>PiNode Labs Bot - Help</b>
@@ -406,20 +474,21 @@ async function handleHelpCommand(chatId: number, from: any) {
 <b>Available Commands:</b>
 
 /start - Show welcome message and quick actions
-/app - Open web app in Telegram
-/referral - Get your referral link and statistics
+/referral - Get your referral link and share it
 /balance - Check your PI Network and PiNode balances
 /stats - View detailed statistics (mining, referrals, balances)
-/link - Link your Telegram account to your email
+/app - Open web app in Telegram (optional)
 /help - Show this help message
 
-<b>Quick Actions:</b>
-<a href="${webAppUrl}">📱 Open Web App</a>
-
 <b>How to get started:</b>
-1. Register on our website
-2. Use /link your@email.com to link your Telegram
-3. Start mining and sharing your referral link!
+1. Send /start to create your account automatically
+2. Share your referral link with friends
+3. Start mining and earning rewards!
+
+<b>Referral System:</b>
+• Share your referral link: /referral
+• Each active friend = 100 PiNode (≈ 5 PI)
+• Claim rewards anytime
 
 <b>Need more help?</b>
 Visit our website: ${baseUrl}
@@ -427,6 +496,13 @@ Visit our website: ${baseUrl}
 
   const keyboard = {
     inline_keyboard: [
+      [
+        { text: '🎁 Get Referral Link', callback_data: 'get_referral_link' },
+      ],
+      [
+        { text: '📊 My Stats', callback_data: 'get_stats' },
+        { text: '💰 Balance', callback_data: 'get_balance' },
+      ],
       [
         {
           text: '📱 Open Web App',
