@@ -73,38 +73,24 @@ export default function LoginForm({}: LoginFormProps) {
               </div>
               <div className="space-y-4 text-center">
                 <p className="text-xs sm:text-sm text-[#a5b4fc]">
-                  {/* EN */}Access to PiNode Labs is now only via{" "}
+                  Access to PiNode Labs is now only via{" "}
                   <span className="font-semibold text-yellow-300">@pinodelabsbot</span> on Telegram.
                   Your account will be created and logged in automatically after you send{" "}
                   <span className="font-semibold">/start</span> in the bot.
-                  <br />
-                  {/* ID */}Akses PiNode Labs sekarang hanya melalui{" "}
-                  <span className="font-semibold text-yellow-300">@pinodelabsbot</span> di Telegram.
-                  Akun akan dibuat dan login otomatis setelah kamu kirim{" "}
-                  <span className="font-semibold">/start</span> di bot.
                 </p>
                 <p className="text-[11px] text-[#a5b4fc]">
                   {isInTelegram ? (
                     <>
-                      {/* EN */}You are opening this page inside the Telegram Web App. If you still see this
+                      You are opening this page inside the Telegram Web App. If you still see this
                       screen, please go back to <span className="font-semibold">@pinodelabsbot</span> and tap the{" "}
                       <span className="font-semibold">“Open Web App”</span> button again to refresh your session.
-                      <br />
-                      {/* ID */}Kamu membuka halaman ini di dalam Telegram Web App. Jika layar ini masih muncul,
-                      silakan kembali ke <span className="font-semibold">@pinodelabsbot</span> dan tekan tombol{" "}
-                      <span className="font-semibold">“Open Web App”</span> sekali lagi untuk menyegarkan sesi.
                     </>
                   ) : (
                     <>
-                      {/* EN */}Open Telegram, search for{" "}
+                      Open Telegram, search for{" "}
                       <span className="font-semibold">@pinodelabsbot</span>, then send{" "}
                       <span className="font-semibold">/start</span> or <span className="font-semibold">/app</span> to
                       begin.
-                      <br />
-                      {/* ID */}Buka Telegram, cari{" "}
-                      <span className="font-semibold">@pinodelabsbot</span>, lalu kirim{" "}
-                      <span className="font-semibold">/start</span> atau <span className="font-semibold">/app</span>{" "}
-                      untuk mulai.
                     </>
                   )}
                 </p>
@@ -122,7 +108,7 @@ export default function LoginForm({}: LoginFormProps) {
                     boxShadow: "0 4px 15px rgba(56, 189, 248, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.16)",
                   }}
                 >
-                  Open / Buka @pinodelabsbot on Telegram
+                  Open @pinodelabsbot on Telegram
                 </Button>
               </div>
             </div>
