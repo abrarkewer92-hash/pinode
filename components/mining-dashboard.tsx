@@ -1,18 +1,55 @@
 "use client"
 
-import { useState, useEffect, useRef, useCallback } from "react"
+import { useState, useEffect, useRef, useCallback, useMemo, memo } from "react"
 import { Card } from "@/components/ui/card"
 import MiningCard from "@/components/mining-card"
 import WalletSection from "@/components/wallet-section"
-import DepositSection from "@/components/deposit-section"
 import ReferralSection from "@/components/referral-section"
 import ExchangeSection from "@/components/exchange-section"
-import WalletAddressesSection from "@/components/wallet-addresses-section"
 import MissionsSection from "@/components/missions-section"
 import { getUserById, updateUserBalance } from "@/lib/supabase-client"
 import { getMiningSession } from "@/lib/supabase-client"
 import { miningCalculator } from "@/lib/mining-system"
 import { supabase } from "@/lib/supabase"
+
+// Optimized floating particles – memoized untuk performa
+const FloatingParticles = memo(() => {
+  const particles = useMemo(() => {
+    // Kurangi dari 10 ke 6 untuk performa lebih baik
+    return Array.from({ length: 6 }, (_, i) => ({
+      id: i,
+      width: Math.random() * 2 + 2,
+      height: Math.random() * 2 + 2,
+      left: Math.random() * 100,
+      top: Math.random() * 100,
+      duration: Math.random() * 8 + 12,
+      delay: Math.random() * 6,
+    }))
+  }, [])
+
+  return (
+    <div className="fixed inset-0 overflow-hidden pointer-events-none" style={{ willChange: 'transform' }}>
+      {particles.map((p) => (
+        <div
+          key={p.id}
+          className="absolute rounded-full bg-yellow-300/5"
+          style={{
+            width: `${p.width}px`,
+            height: `${p.height}px`,
+            left: `${p.left}%`,
+            top: `${p.top}%`,
+            boxShadow: "0 0 18px rgba(250, 204, 21, 0.5)",
+            animation: `float ${p.duration}s ease-in-out infinite`,
+            animationDelay: `${p.delay}s`,
+            willChange: 'transform',
+            transform: 'translateZ(0)',
+          }}
+        />
+      ))}
+    </div>
+  )
+})
+FloatingParticles.displayName = 'FloatingParticles'
 
 interface User {
   id: string
@@ -261,14 +298,19 @@ export default function MiningDashboard({ user, onUpdateBalance, onLogout }: Min
     return value.toFixed(11).replace(/\.?0+$/, "")
   }
 
-  // Bottom navigation items (Home centered: Wallet - Friends - Home - Missions - Swap)
-  const tabs = [
+  // Bottom navigation items (Home centered: Wallet - Friends - Home - Missions - Swap) – memoized
+  const tabs = useMemo(() => [
     { id: "deposit", label: "Wallet", icon: "/gamety dashboard/wallet.png" },
     { id: "wallet", label: "Friends", icon: "/gamety dashboard/friends.png" },
     { id: "mining", label: "Home", icon: "/pi/pinetwork.png" },
     { id: "referral", label: "Missions", icon: "/gamety dashboard/missions.png" },
     { id: "exchange", label: "Swap", icon: "/gamety dashboard/swap.png" },
-  ]
+  ], [])
+
+  // Optimize tab change handler
+  const handleTabChange = useCallback((tabId: typeof activeTab) => {
+    setActiveTab(tabId)
+  }, [])
 
   return (
     <div
@@ -278,7 +320,7 @@ export default function MiningDashboard({ user, onUpdateBalance, onLogout }: Min
           "radial-gradient(circle at top, #151226 0%, #070415 45%, #02010a 100%)",
       }}
     >
-      {/* Soft animated background pattern */}
+      {/* Soft animated background pattern – optimized dengan GPU acceleration */}
       <div
         className="fixed inset-0 opacity-15"
         style={{
@@ -288,31 +330,17 @@ export default function MiningDashboard({ user, onUpdateBalance, onLogout }: Min
           `,
           backgroundSize: "120% 120%",
           animation: "gradient-shift 18s ease-in-out infinite",
+          willChange: 'background-position',
+          transform: 'translateZ(0)',
         }}
       />
 
-      {/* Subtle floating particles (reduced for cleaner look) */}
-      <div className="fixed inset-0 overflow-hidden pointer-events-none">
-        {[...Array(10)].map((_, i) => (
-          <div
-            key={i}
-            className="absolute rounded-full bg-yellow-300/5"
-            style={{
-              width: `${Math.random() * 3 + 2}px`,
-              height: `${Math.random() * 3 + 2}px`,
-              left: `${Math.random() * 100}%`,
-              top: `${Math.random() * 100}%`,
-              boxShadow: "0 0 18px rgba(250, 204, 21, 0.5)",
-              animation: `float ${Math.random() * 12 + 12}s ease-in-out infinite`,
-              animationDelay: `${Math.random() * 6}s`,
-            }}
-          />
-        ))}
-      </div>
+      {/* Subtle floating particles – optimized dengan useMemo */}
+      <FloatingParticles />
 
       <main className="relative z-10 w-full max-w-md mx-auto px-4 pt-3 pb-28 flex-1 flex flex-col gap-3">
-        {/* Header + balances in a glass card */}
-        <section className="rounded-2xl border border-white/10 bg-black/40 backdrop-blur-2xl px-3.5 py-3 shadow-[0_16px_45px_rgba(0,0,0,0.65)]">
+        {/* Header + balances – menyatu dengan satu latar (transparan) */}
+        <section className="px-0 py-3">
           {/* Top App Header */}
           <header className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2.5">
@@ -328,19 +356,19 @@ export default function MiningDashboard({ user, onUpdateBalance, onLogout }: Min
                 <span className="text-sm font-semibold text-white tracking-wide">
                   PiNode Labs
                 </span>
-                <span className="text-[11px] text-[#a7a3ff]">
+                <span className="text-[11px] text-[#a5b4fc]">
                   Pi cloud mining dashboard
                 </span>
               </div>
             </div>
             {/* User info + logout */}
             <div className="flex items-center gap-2">
-              <span className="max-w-[120px] truncate text-[11px] text-[#c9c3ff]">
+              <span className="max-w-[120px] truncate text-[11px] text-[#a5b4fc]">
                 {user.email}
               </span>
               <button
                 type="button"
-                className="w-8 h-8 flex items-center justify-center rounded-full bg-[#22193d] border border-[#5a4ac7] text-[#c9c3ff] hover:bg-[#2b2053] hover:border-[#7c6cf3] transition-colors"
+                className="w-8 h-8 flex items-center justify-center rounded-full bg-white/5 text-[#a5b4fc] hover:bg-white/10 transition-colors"
                 onClick={onLogout}
               >
                 <svg
@@ -361,10 +389,10 @@ export default function MiningDashboard({ user, onUpdateBalance, onLogout }: Min
             </div>
           </header>
 
-          {/* Stats Grid - balances (Pi / PiNode) */}
+          {/* Stats Grid - balances (Pi / PiNode) – block sesuai latar */}
           <div className="grid grid-cols-1 gap-2.5">
-            {/* PI Balance card */}
-            <div className="rounded-xl px-3 py-2.5 flex items-center bg-gradient-to-r from-[#1e1638]/95 via-[#241948]/95 to-[#1e1638]/95 border border-yellow-300/20 shadow-[0_10px_30px_rgba(15,23,42,0.9)]">
+            {/* PI Balance */}
+            <div className="rounded-xl px-3 py-2.5 flex items-center bg-gradient-to-r from-[#151226]/95 via-[#0f0c1e]/95 to-[#151226]/95">
               <div className="flex items-center gap-3">
                 <img
                   src="/pi/pinetwork.png"
@@ -378,7 +406,7 @@ export default function MiningDashboard({ user, onUpdateBalance, onLogout }: Min
                   }}
                 />
                 <div className="flex flex-col">
-                  <span className="text-[10px] text-[#c6bfff] mb-0.5">
+                  <span className="text-[10px] text-[#a5b4fc] mb-0.5">
                     Pi Balance
                   </span>
                   <span className="text-sm font-semibold text-white">
@@ -391,8 +419,8 @@ export default function MiningDashboard({ user, onUpdateBalance, onLogout }: Min
               </div>
             </div>
 
-            {/* PiNode Balance card */}
-            <div className="rounded-xl px-3 py-2.5 flex items-center bg-gradient-to-r from-[#151735]/95 via-[#111827]/95 to-[#0b1220]/95 border border-sky-300/20 shadow-[0_10px_30px_rgba(15,23,42,0.9)]">
+            {/* PiNode Balance */}
+            <div className="rounded-xl px-3 py-2.5 flex items-center bg-gradient-to-r from-[#0f0c1e]/95 via-[#0a0818]/95 to-[#0f0c1e]/95">
               <div className="flex items-center gap-3">
                 <img
                   src="/pi/pinodelabs.png"
@@ -406,7 +434,7 @@ export default function MiningDashboard({ user, onUpdateBalance, onLogout }: Min
                   }}
                 />
                 <div className="flex flex-col">
-                  <span className="text-[10px] text-[#bfdbfe] mb-0.5">
+                  <span className="text-[10px] text-[#a5b4fc] mb-0.5">
                     PiNode Balance
                   </span>
                   <span className="text-sm font-semibold text-white">
@@ -468,11 +496,16 @@ export default function MiningDashboard({ user, onUpdateBalance, onLogout }: Min
         {/* Tab Content removed (was duplicating the main content) */}
       </main>
 
-      {/* Bottom Navigation Bar (fixed) */}
+      {/* Bottom Navigation Bar – block menyesuaikan latar (gradient halaman) */}
       <nav className="fixed bottom-0 left-0 right-0 z-20">
-        <div className="absolute inset-0 pointer-events-none bg-gradient-to-t from-black/70 via-black/30 to-transparent" />
+        <div className="absolute inset-0 pointer-events-none bg-gradient-to-t from-[#02010a] via-[#070415]/80 to-transparent" />
         <div className="px-3 pb-[calc(env(safe-area-inset-bottom,0px)+10px)] pt-2">
-          <div className="mx-auto w-full max-w-md rounded-2xl border border-white/10 bg-[#0c0816]/80 backdrop-blur-xl shadow-[0_18px_60px_rgba(0,0,0,0.65)]">
+          <div
+            className="mx-auto w-full max-w-md rounded-2xl backdrop-blur-md"
+            style={{
+              background: "linear-gradient(to right, #070415 0%, #050210 50%, #070415 100%)",
+            }}
+          >
             <div className="flex items-end justify-between px-3 sm:px-4 py-2.5">
               {tabs.map((tab) => {
                 const isActive = activeTab === tab.id
@@ -480,15 +513,13 @@ export default function MiningDashboard({ user, onUpdateBalance, onLogout }: Min
                 return (
                   <button
                     key={tab.id}
-                    onClick={() => setActiveTab(tab.id as any)}
+                    onClick={() => handleTabChange(tab.id as any)}
                     className="relative flex flex-1 flex-col items-center justify-end gap-1 text-center"
                   >
                     {isHome ? (
                       <div className="relative -mt-6">
                         <div
-                          className={`w-14 h-14 sm:w-16 sm:h-16 rounded-full flex items-center justify-center border ${
-                            isActive ? "border-[#fbbf24]/70" : "border-white/10"
-                          }`}
+                          className="w-14 h-14 sm:w-16 sm:h-16 rounded-full flex items-center justify-center"
                           style={{
                             background:
                               "radial-gradient(circle at 30% 20%, rgba(251,191,36,0.95) 0%, rgba(236,72,153,0.7) 35%, rgba(79,70,229,0.9) 100%)",

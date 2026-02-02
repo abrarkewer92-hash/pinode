@@ -292,7 +292,7 @@ export default function LoginForm({ onLogin, isSignUp: initialIsSignUp = false, 
                     <span className="text-sm font-semibold text-white tracking-wide">
                       PiNode Labs
                     </span>
-                    <span className="text-[11px] text-[#a7a3ff]">
+                    <span className="text-[11px] text-[#a5b4fc]">
                       {isSignUp ? "Create Account" : "Sign In"}
                     </span>
                   </div>
@@ -318,7 +318,7 @@ export default function LoginForm({ onLogin, isSignUp: initialIsSignUp = false, 
               <form onSubmit={handleSubmit} className="space-y-3">
                 {isSignUp && (
                   <div className="group">
-                    <label className="flex items-center gap-2 text-[#c6bfff] mb-1.5 text-xs font-medium">
+                    <label className="flex items-center gap-2 text-[#a5b4fc] mb-1.5 text-xs font-medium">
                       <span>Nickname (optional)</span>
                     </label>
                     <input
@@ -332,7 +332,7 @@ export default function LoginForm({ onLogin, isSignUp: initialIsSignUp = false, 
                   </div>
                 )}
                 <div className="group">
-                  <label className="flex items-center gap-2 text-[#c6bfff] mb-1.5 text-xs font-medium">
+                  <label className="flex items-center gap-2 text-[#a5b4fc] mb-1.5 text-xs font-medium">
                     <span>Email</span>
                   </label>
                   <input
@@ -346,7 +346,7 @@ export default function LoginForm({ onLogin, isSignUp: initialIsSignUp = false, 
                 </div>
 
                 <div className="group">
-                  <label className="flex items-center gap-2 text-[#c6bfff] mb-1.5 text-xs font-medium">
+                  <label className="flex items-center gap-2 text-[#a5b4fc] mb-1.5 text-xs font-medium">
                     <span>Password</span>
                   </label>
                   <input
@@ -361,7 +361,7 @@ export default function LoginForm({ onLogin, isSignUp: initialIsSignUp = false, 
 
                 {isSignUp && (
                   <div className="group">
-                    <label className="flex items-center gap-2 text-[#c6bfff] mb-1.5 text-xs font-medium">
+                    <label className="flex items-center gap-2 text-[#a5b4fc] mb-1.5 text-xs font-medium">
                       <span>Confirm Password</span>
                     </label>
                     <input
@@ -377,7 +377,7 @@ export default function LoginForm({ onLogin, isSignUp: initialIsSignUp = false, 
 
                 {/* Simple Captcha */}
                 <div className="group">
-                  <label className="flex items-center justify-between mb-1.5 text-xs font-medium text-[#c6bfff]">
+                  <label className="flex items-center justify-between mb-1.5 text-xs font-medium text-[#a5b4fc]">
                     <span>Captcha (anti-bot)</span>
                     {captchaQuestion && (
                       <span className="text-[11px] text-yellow-300 font-semibold">
@@ -398,7 +398,7 @@ export default function LoginForm({ onLogin, isSignUp: initialIsSignUp = false, 
                     <button
                       type="button"
                       onClick={generateCaptcha}
-                      className="px-2 py-1 rounded-md text-[11px] border border-white/15 text-[#c6bfff] hover:border-yellow-400/50 hover:text-yellow-300 transition-colors"
+                      className="px-2 py-1 rounded-md text-[11px] border border-white/15 text-[#a5b4fc] hover:border-yellow-400/50 hover:text-yellow-300 transition-colors"
                       disabled={isLoading}
                     >
                       New
@@ -440,7 +440,7 @@ export default function LoginForm({ onLogin, isSignUp: initialIsSignUp = false, 
                     setConfirmPassword("")
                   }}
                   disabled={isLoading}
-                  className="text-[#c6bfff] text-xs hover:text-yellow-300 underline transition-colors duration-200 disabled:opacity-50"
+                  className="text-[#a5b4fc] text-xs hover:text-yellow-300 underline transition-colors duration-200 disabled:opacity-50"
                 >
                   {isSignUp ? "Already have an account? Sign in" : "Don't have an account? Sign up"}
                 </button>

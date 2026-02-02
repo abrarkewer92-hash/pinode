@@ -1,7 +1,6 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Card } from "@/components/ui/card"
 import { CheckCircle, Clock, XCircle, ArrowUpRight } from "lucide-react"
 import { getTransactions } from "@/lib/supabase-client"
 
@@ -59,7 +58,7 @@ export default function DepositHistory({ userId, mode = "all" }: DepositHistoryP
         return {
           icon: CheckCircle,
           bgColor: 'bg-green-500/20',
-          borderColor: 'border-green-500/30',
+          borderColor: '',
           textColor: 'text-green-500',
           iconColor: 'text-green-500',
           label: 'Completed',
@@ -69,7 +68,7 @@ export default function DepositHistory({ userId, mode = "all" }: DepositHistoryP
         return {
           icon: Clock,
           bgColor: 'bg-yellow-500/20',
-          borderColor: 'border-yellow-500/30',
+          borderColor: '',
           textColor: 'text-yellow-500',
           iconColor: 'text-yellow-500',
           label: 'Pending',
@@ -79,7 +78,7 @@ export default function DepositHistory({ userId, mode = "all" }: DepositHistoryP
         return {
           icon: XCircle,
           bgColor: 'bg-red-500/20',
-          borderColor: 'border-red-500/30',
+          borderColor: '',
           textColor: 'text-red-500',
           iconColor: 'text-red-500',
           label: 'Failed',
@@ -89,7 +88,7 @@ export default function DepositHistory({ userId, mode = "all" }: DepositHistoryP
         return {
           icon: Clock,
           bgColor: 'bg-gray-500/20',
-          borderColor: 'border-gray-500/30',
+          borderColor: '',
           textColor: 'text-gray-500',
           iconColor: 'text-gray-500',
           label: 'Unknown',
@@ -143,7 +142,7 @@ export default function DepositHistory({ userId, mode = "all" }: DepositHistoryP
               ? "Swap History"
               : "Transaction History"}
           </h3>
-          <p className="text-[11px] text-[#a7a3ff]">
+          <p className="text-[11px] text-[#a5b4fc]">
             {mode === "boost"
               ? "Your PI Network Boost deposit requests"
               : mode === "withdraw"
@@ -157,11 +156,11 @@ export default function DepositHistory({ userId, mode = "all" }: DepositHistoryP
 
       {/* State loading / empty */}
       {loading && (
-        <p className="text-xs text-[#a7a3ff]">Loading history...</p>
+        <p className="text-xs text-[#a5b4fc]">Loading history...</p>
       )}
 
       {!loading && !hasTransactions && (
-        <p className="text-xs text-[#a7a3ff]">
+        <p className="text-xs text-[#a5b4fc]">
           {mode === "boost"
             ? "No boost history yet."
             : mode === "withdraw"
@@ -200,18 +199,18 @@ export default function DepositHistory({ userId, mode = "all" }: DepositHistoryP
           return (
             <div
               key={tx.id}
-              className="rounded-2xl border border-white/10 bg-black/40 backdrop-blur-2xl px-3.5 py-2.5 flex items-center justify-between gap-3 shadow-[0_8px_28px_rgba(0,0,0,0.65)]"
+              className="rounded-2xl bg-white/5 px-3.5 py-2.5 flex items-center justify-between gap-3"
             >
               {/* Left: icon + title + time */}
               <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-full bg-[#140f25] border border-[#4338ca]/50 flex items-center justify-center">
+                <div className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center">
                   <ArrowUpRight className="w-4 h-4 text-[#a5b4fc]" />
                 </div>
                 <div className="flex flex-col">
                   <div className="flex items-center gap-2">
                     <span className="text-xs font-semibold text-white">{title}</span>
                     <div
-                      className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full border ${statusConfig.borderColor} ${statusConfig.bgColor}`}
+                      className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full ${statusConfig.bgColor}`}
                     >
                       <StatusIcon className={`w-3 h-3 ${statusConfig.iconColor}`} />
                       <span className={`text-[9px] font-medium ${statusConfig.textColor}`}>
@@ -219,7 +218,7 @@ export default function DepositHistory({ userId, mode = "all" }: DepositHistoryP
                       </span>
                     </div>
                   </div>
-                  <span className="text-[10px] text-[#6b7280] mt-0.5">
+                  <span className="text-[10px] text-[#a5b4fc] mt-0.5">
                     {formatTimeAgo(tx.created_at)}
                   </span>
                 </div>
@@ -232,7 +231,7 @@ export default function DepositHistory({ userId, mode = "all" }: DepositHistoryP
                   <span className="text-[10px] text-[#fde68a]">PI</span>
                 </div>
                 {subAmountText && (
-                  <div className="text-[10px] text-[#9ca3af] mt-0.5">
+                  <div className="text-[10px] text-[#a5b4fc] mt-0.5">
                     {subAmountText}
                   </div>
                 )}

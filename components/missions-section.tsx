@@ -1,7 +1,6 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { getUserById, updateUserBalance, createTransaction, getTransactions, getUserMissions, upsertUserMission } from "@/lib/supabase-client"
 import { ExternalLink, CheckCircle2, Twitter, MessageCircle } from "lucide-react"
@@ -219,40 +218,40 @@ export default function MissionsSection({ userId, onBonusEarned }: MissionsSecti
 
   return (
     <div className="space-y-4">
-      {/* Header Card */}
-      <Card className="border border-white/10 bg-black/40 backdrop-blur-2xl p-4 space-y-3 shadow-[0_16px_45px_rgba(0,0,0,0.65)]">
+      {/* Header – menyatu satu latar */}
+      <div className="p-4 space-y-3">
         <div className="flex items-center gap-3">
-          <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#7dd3fc] to-[#0ea5e9] flex items-center justify-center">
+          <div className="w-12 h-12 rounded-xl bg-[#0c1f2e] flex items-center justify-center">
             <MessageCircle className="w-6 h-6 text-white" />
           </div>
           <div className="flex-1">
             <h2 className="text-lg font-semibold text-white">PiNode Airdrop Missions</h2>
-            <p className="text-xs text-[#c9c3ff]">
+            <p className="text-xs text-[#a5b4fc]">
               Complete tasks and earn free PiNode rewards
             </p>
           </div>
         </div>
-        <div className="grid grid-cols-3 gap-3 pt-2 border-t border-white/10">
+        <div className="grid grid-cols-3 gap-3 pt-3">
           <div>
-            <p className="text-[10px] text-[#a7a3ff] mb-1">Completed</p>
+            <p className="text-[10px] text-[#a5b4fc] mb-1">Completed</p>
             <p className="text-sm font-semibold text-white">
               {completedCount}/{MISSIONS.length}
             </p>
           </div>
           <div>
-            <p className="text-[10px] text-[#a7a3ff] mb-1">Claimed</p>
+            <p className="text-[10px] text-[#a5b4fc] mb-1">Claimed</p>
             <p className="text-sm font-semibold text-white">{claimedCount}</p>
           </div>
           <div>
-            <p className="text-[10px] text-[#a7a3ff] mb-1">Pending</p>
+            <p className="text-[10px] text-[#a5b4fc] mb-1">Pending</p>
             <p className="text-sm font-semibold text-[#7dd3fc]">
               {MISSIONS.length - claimedCount}
             </p>
           </div>
         </div>
-      </Card>
+      </div>
 
-      {/* Missions List */}
+      {/* Missions List – menyatu latar */}
       <div className="space-y-3">
         {MISSIONS.map((mission) => {
           const isCompleted = completedMissions.has(mission.id)
@@ -260,17 +259,17 @@ export default function MissionsSection({ userId, onBonusEarned }: MissionsSecti
           const canClaim = isCompleted && !isClaimed
 
           return (
-            <Card
+            <div
               key={mission.id}
-              className="border border-white/10 bg-black/40 backdrop-blur-2xl p-4 shadow-[0_16px_45px_rgba(0,0,0,0.65)]"
+              className="p-4"
             >
               <div className="flex items-start gap-3">
                 {/* Mission Icon */}
                 <div
                   className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${
                     isCompleted
-                      ? "bg-gradient-to-br from-emerald-500 to-emerald-600"
-                      : "bg-gradient-to-br from-[#1e1638] to-[#241948] border border-white/10"
+                      ? "bg-emerald-600"
+                      : "bg-[#1a1530]"
                   }`}
                 >
                   {isCompleted ? (
@@ -287,7 +286,7 @@ export default function MissionsSection({ userId, onBonusEarned }: MissionsSecti
                       <h3 className="text-sm font-semibold text-white mb-1">
                         {mission.title}
                       </h3>
-                      <p className="text-xs text-[#c9c3ff] mb-2">
+                      <p className="text-xs text-[#a5b4fc] mb-2">
                         {mission.description}
                       </p>
                     </div>
@@ -295,7 +294,7 @@ export default function MissionsSection({ userId, onBonusEarned }: MissionsSecti
                       <p className="text-sm font-semibold text-[#7dd3fc]">
                         +{mission.reward}
                       </p>
-                      <p className="text-[10px] text-[#a7a3ff]">PiNode</p>
+                      <p className="text-[10px] text-[#a5b4fc]">PiNode</p>
                     </div>
                   </div>
 
@@ -329,31 +328,31 @@ export default function MissionsSection({ userId, onBonusEarned }: MissionsSecti
                   </div>
                 </div>
               </div>
-            </Card>
+            </div>
           )
         })}
       </div>
 
-      {/* Info Card */}
-      <Card className="border border-white/10 bg-black/40 backdrop-blur-2xl p-4 space-y-2 shadow-[0_16px_45px_rgba(0,0,0,0.65)]">
+      {/* Info – menyatu latar */}
+      <div className="p-4 space-y-2">
         <h4 className="text-sm font-semibold text-white">How it works</h4>
         <div className="space-y-1.5">
-          <p className="text-xs text-[#c9c3ff]">
+          <p className="text-xs text-[#a5b4fc]">
             1. Click "Complete Task" to open the social media link
           </p>
-          <p className="text-xs text-[#c9c3ff]">
+          <p className="text-xs text-[#a5b4fc]">
             2. Follow, join, or retweet as instructed
           </p>
-          <p className="text-xs text-[#c9c3ff]">
+          <p className="text-xs text-[#a5b4fc]">
             3. Return to the app and claim your PiNode reward
           </p>
-          <p className="text-xs text-[#c9c3ff] mt-2">
+          <p className="text-xs text-[#a5b4fc] mt-2">
             <span className="font-semibold text-[#7dd3fc]">
               100 PiNode ≈ 5 PI Network
             </span>
           </p>
         </div>
-      </Card>
+      </div>
     </div>
   )
 }

@@ -1,7 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
-import { Card } from "@/components/ui/card"
+import { useState, useEffect, useCallback, useMemo } from "react"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
@@ -64,17 +63,17 @@ export default function MiningCard({
 
   // Note: we keep mining session logic but hide tiers/miner levels in UI.
 
-  // Update mining balance display in real-time using pending from hook
+  // Update mining balance display – optimized: update setiap 2 detik untuk performa lebih baik
   useEffect(() => {
     if (mining.apyTierId === undefined && mining.apyTierId !== 0) return
 
     const tierId = mining.apyTierId
-    // Update display every second using pending from hook
+    // Update display setiap 2 detik (lebih smooth, kurang CPU intensive)
     const interval = setInterval(() => {
       if (mining.pending !== undefined) {
         setMiningBalance(mining.pending)
       }
-    }, 1000)
+    }, 2000)
 
     return () => clearInterval(interval)
   }, [mining.apyTierId, mining.pending])
@@ -126,7 +125,7 @@ export default function MiningCard({
     }
   }, [mining.pending, mining.apyTierId, userId])
 
-  const handleClaim = async () => {
+  const handleClaim = useCallback(async () => {
     // Use pending balance from hook (already calculated accurately)
     const exactBalance = mining.pending || 0
     
@@ -148,7 +147,7 @@ export default function MiningCard({
       // Restore balance on error
       setMiningBalance(exactBalance)
     }
-  }
+  }, [mining.pending, mining.processClaim, onClaimSuccess])
 
   // --- Swap logic ---
   const handleSwap = async () => {
@@ -197,6 +196,15 @@ export default function MiningCard({
       // Notify parent to update balances
       if (onExchange) {
         await onExchange(amount, piReceived)
+      }
+
+      // Send Telegram notification
+      try {
+        const { notifyBalanceUpdate } = await import('@/lib/telegram-bot-helper')
+        await notifyBalanceUpdate(userId, 'exchange', piReceived)
+      } catch (telegramError) {
+        // Don't fail exchange if Telegram notification fails
+        console.warn("Failed to send Telegram notification:", telegramError)
       }
 
       setSwapSuccess(
@@ -305,49 +313,57 @@ export default function MiningCard({
   const referralBonus = mining.referralBonusPerDay || 0
   const referralCount = mining.referralActiveCount || 0
 
-  const formatPiAmount = (value: number | undefined | null) => {
+  const formatPiAmount = useCallback((value: number | undefined | null) => {
     if (typeof value !== "number" || !Number.isFinite(value)) return "0"
     // Sama seperti kartu balance: hingga 11 desimal tanpa padding nol di belakang
     return value.toFixed(11).replace(/\.?0+$/, "")
-  }
+  }, [])
+
+  // Memoize computed values untuk mengurangi re-render
+  const formattedMiningBalance = useMemo(() => miningBalance.toFixed(7), [miningBalance])
+  const formattedTotalMined = useMemo(() => formatPiAmount(mining.totalMined ?? 0), [mining.totalMined, formatPiAmount])
+  const formattedDailyRate = useMemo(() => dailyRate.toFixed(4), [dailyRate])
+
+  // Optimize button handlers dengan useCallback
+  const handleShowBoostModal = useCallback(() => setShowBoostModal(true), [])
+  const handleShowSwapModal = useCallback(() => setShowSwapModal(true), [])
 
   return (
   <div className="space-y-2">
-      {/* Main Mining Display - PiNode style */}
-      <Card className="relative overflow-hidden border border-[#3b2a64] bg-gradient-to-b from-[#1e1638] via-[#130d26] to-[#070514] px-0 pt-4 pb-3 flex flex-col items-center gap-2.5">
-        {/* Node Network Background */}
+      {/* Main Mining Display – menyatu satu latar (tanpa blok latar terpisah) */}
+      <div className="relative overflow-hidden px-0 pt-4 pb-3 flex flex-col items-center gap-2.5">
+        {/* Built-in SVG turbine (no images) */}
         <div className="relative mb-3 flex items-center justify-center">
           <NodeNetworkBackground
             size={260}
-            showCenterLogo={true}
-            centerLogoUrl="/pi/pinetwork.png"
+            turbineOnly
             className="node-network-mining"
           />
-          <div className="absolute -bottom-4 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full bg-black/40 border border-[#fbbf24]/40 text-[10px] font-medium text-[#fde68a] backdrop-blur-md flex items-center gap-1">
+          <div className="absolute -bottom-4 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full bg-white/5 text-[10px] font-medium text-[#fde68a] flex items-center gap-1">
             <span className="inline-block w-1.5 h-1.5 rounded-full bg-[#4ade80] shadow-[0_0_8px_rgba(74,222,128,0.9)]" />
             Mining...
           </div>
         </div>
 
-        {/* Balance text */}
+        {/* Balance text – large yellow/gold amount */}
         <div className="mt-1 text-center">
-          <div className="text-[11px] text-[#a5b4fc] mb-1">Balance</div>
-          <div className="text-2xl font-semibold text-[var(--chart-5)] tracking-tight">
-            {miningBalance.toFixed(7)} <span className="text-sm text-[#a5b4fc]">PI</span>
+          <div className="text-[11px] text-[#a5b4fc] mb-1.5">Balance</div>
+          <div className="text-4xl font-bold text-[#facc15] tracking-tight leading-tight">
+            {formattedMiningBalance} <span className="text-lg text-[#a5b4fc]">PI</span>
           </div>
         </div>
 
-        {/* Mining power */}
+        {/* Mining power – menyatu latar */}
         <div className="mt-1 mb-2">
-          <div className="flex items-center justify-center gap-2 rounded-full bg-[#140f25] px-4 py-1.5 border border-[#4338ca]/60">
+          <div className="flex items-center justify-center gap-2 rounded-xl px-4 py-2">
             <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-[#4f46e5] text-[11px] text-white shadow-[0_0_12px_rgba(79,70,229,0.9)]">
               ⚡
             </span>
-            <span className="text-[11px] text-[#c7d2fe] font-medium">
+            <span className="text-[11px] text-[#a5b4fc] font-medium">
               Mining Power
             </span>
             <span className="text-[11px] text-white font-semibold">
-              {dailyRate.toFixed(4)} PI/day
+              {formattedDailyRate} PI/day
             </span>
           </div>
           {referralBonus > 0 && (
@@ -359,10 +375,10 @@ export default function MiningCard({
 
         {/* Total mined summary */}
         <div className="mt-1 mb-2 text-center">
-          <span className="text-[11px] text-[#9ca3af]">
+          <span className="text-[11px] text-[#a5b4fc]">
             Total mined:{" "}
-            <span className="font-semibold text-[#e5e7eb]">
-              {formatPiAmount(mining.totalMined ?? 0)} PI
+            <span className="font-semibold text-white">
+              {formattedTotalMined} PI
             </span>
           </span>
         </div>
@@ -371,8 +387,9 @@ export default function MiningCard({
         <div className="flex w-full px-4 gap-2 mb-1.5">
           <button
             type="button"
-            onClick={() => setShowBoostModal(true)}
+            onClick={handleShowBoostModal}
             className="flex-1 h-10 rounded-full bg-gradient-to-r from-[#facc15] via-[#f97316] to-[#fb923c] text-[13px] font-semibold text-[#1e1308] shadow-[0_0_25px_rgba(250,204,21,0.45)] hover:shadow-[0_0_35px_rgba(250,204,21,0.75)] hover:brightness-110 hover:-translate-y-0.5 transition-transform transition-shadow duration-200 relative overflow-hidden"
+            style={{ willChange: 'transform' }}
           >
             <span className="absolute inset-0 pointer-events-none opacity-30 bg-[radial-gradient(circle_at_0%_0%,rgba(255,255,255,0.8),transparent_55%)] animate-pulse" />
             <span className="relative z-10 flex items-center justify-center gap-2">
@@ -392,8 +409,9 @@ export default function MiningCard({
           </button>
           <button
             type="button"
-            onClick={() => setShowSwapModal(true)}
+            onClick={handleShowSwapModal}
             className="flex-1 h-10 rounded-full bg-gradient-to-r from-[#22c55e] to-[#16a34a] text-[13px] font-semibold text-white shadow-[0_0_25px_rgba(34,197,94,0.45)] hover:shadow-[0_0_35px_rgba(34,197,94,0.8)] hover:brightness-110 hover:-translate-y-0.5 transition-transform transition-shadow duration-200 relative overflow-hidden"
+            style={{ willChange: 'transform' }}
           >
             <span className="absolute inset-0 pointer-events-none opacity-25 bg-[radial-gradient(circle_at_100%_0%,rgba(255,255,255,0.9),transparent_55%)]" />
             <span className="relative z-10 flex items-center justify-center gap-2 tracking-wide">
@@ -424,7 +442,7 @@ export default function MiningCard({
         <div className="mt-0.5 w-full px-4 relative">
           {claimFlashAmount !== null && (
             <div className="pointer-events-none absolute -top-6 left-1/2 -translate-x-1/2 animate-bounce">
-              <div className="flex items-center gap-1 rounded-full bg-emerald-500/15 border border-emerald-400/60 px-3 py-1 text-[11px] text-emerald-100 shadow-[0_0_18px_rgba(16,185,129,0.6)]">
+              <div className="flex items-center gap-1 rounded-full bg-emerald-500/20 px-3 py-1 text-[11px] text-emerald-100">
                 <img
                   src="/pi/pinetwork.png"
                   alt="+PI"
@@ -439,12 +457,12 @@ export default function MiningCard({
           <Button
             onClick={handleClaim}
             disabled={miningBalance <= 0}
-            className="w-full h-11 rounded-full bg-[#5b21ff] text-[13px] font-semibold text-white border border-[#a855f7]/60 shadow-[0_12px_30px_rgga(88,28,135,0.7)] transition-transform transition-shadow duration-150 ease-out hover:shadow-[0_16px_40px_rgba(88,28,135,0.9)] active:scale-95 active:shadow-[0_6px_18px_rgba(88,28,135,0.7)] disabled:bg-[#25124a] disabled:border-[#4b3f80] disabled:text-[#9ca3af] disabled:shadow-none"
+            className="w-full h-11 rounded-xl bg-[#5b21b6] text-[13px] font-semibold text-white transition-transform duration-150 ease-out hover:bg-[#6d28d9] active:scale-[0.98] disabled:bg-[#25124a] disabled:text-[#a5b4fc]/50"
           >
-            Claim PI ({miningBalance.toFixed(7)} PI)
+            Claim PI ({formattedMiningBalance} PI)
           </Button>
         </div>
-      </Card>
+      </div>
 
       {/* Boost Modal */}
       <Dialog
@@ -460,7 +478,7 @@ export default function MiningCard({
           }
         }}
       >
-        <DialogContent className="max-w-sm sm:max-w-md bg-[#090314] border border-purple-700/40 text-white">
+        <DialogContent className="max-w-sm sm:max-w-md bg-[#0c0818] text-white">
           <DialogHeader className="space-y-1">
             <DialogTitle className="text-lg sm:text-xl font-bold text-center">
               Mining Power Boost
@@ -493,12 +511,12 @@ export default function MiningCard({
 
           {/* Error / success messages */}
           {boostError && (
-            <p className="mt-2 text-xs text-red-400 bg-red-500/10 border border-red-500/40 rounded-md px-3 py-2">
+            <p className="mt-2 text-xs text-red-400 bg-red-500/15 rounded-xl px-3 py-2">
               {boostError}
             </p>
           )}
           {boostSuccess && (
-            <p className="mt-2 text-xs text-emerald-400 bg-emerald-500/10 border border-emerald-500/40 rounded-md px-3 py-2">
+            <p className="mt-2 text-xs text-emerald-400 bg-emerald-500/15 rounded-xl px-3 py-2">
               {boostSuccess}
             </p>
           )}
@@ -602,7 +620,7 @@ export default function MiningCard({
                   min={minBoostAmount}
                   value={boostAmount}
                   onChange={(e) => setBoostAmount(e.target.value)}
-                  className="bg-[#0b051a] border-purple-700/40 text-sm"
+                  className="no-spinner bg-[#0a0612] text-sm rounded-xl"
                 />
                 <p className="text-[11px] text-purple-200/70">
                   Minimum amount: {minBoostAmount} PI
@@ -612,7 +630,7 @@ export default function MiningCard({
               <div className="mt-5 flex gap-3">
                 <Button
                   variant="outline"
-                  className="flex-1 border-purple-700/40 bg-transparent text-xs"
+                  className="flex-1 bg-transparent text-xs rounded-xl"
                   onClick={() => setShowBoostModal(false)}
                 >
                   Cancel
@@ -641,14 +659,14 @@ export default function MiningCard({
                 </div>
 
                 <div className="flex flex-col items-center gap-3">
-                  <div className="w-40 h-40 rounded-2xl bg-black/40 border border-purple-500/40 flex items-center justify-center">
+                  <div className="w-40 h-40 rounded-2xl bg-[#0a0612] flex items-center justify-center">
                     <img
                       src="/gamety dashboard/scan.png"
                       alt="Scan to pay"
                       className="w-36 h-36 object-contain"
                     />
                   </div>
-                  <div className="w-full text-xs text-center break-all bg-black/40 border border-purple-500/40 rounded-xl px-3 py-2">
+                  <div className="w-full text-xs text-center break-all bg-[#0a0612] rounded-xl px-3 py-2">
                     <div className="text-purple-100/70 mb-1">Pi Network address</div>
                     <div className="font-mono text-[11px] text-white">
                       {boostDepositAddress}
@@ -664,7 +682,7 @@ export default function MiningCard({
               <div className="mt-5 flex gap-3">
                 <Button
                   variant="outline"
-                  className="flex-1 border-purple-700/40 bg-transparent text-xs"
+                  className="flex-1 bg-transparent text-xs rounded-xl"
                   onClick={() => setBoostStep(1)}
                 >
                   Back
@@ -690,7 +708,7 @@ export default function MiningCard({
                     placeholder="Enter your UID"
                     value={uid}
                     onChange={(e) => setUid(e.target.value)}
-                    className="bg-[#0b051a] border-purple-700/40 text-xs"
+                    className="bg-[#0a0612] text-xs rounded-xl"
                   />
                 </div>
                 <div className="grid gap-2">
@@ -699,7 +717,7 @@ export default function MiningCard({
                     placeholder="e.g. 7a8b9c1d2e3f..."
                     value={txId}
                     onChange={(e) => setTxId(e.target.value)}
-                    className="bg-[#0b051a] border-purple-700/40 text-xs"
+                    className="bg-[#0a0612] text-xs rounded-xl"
                   />
                 </div>
                 <div className="grid gap-2">
@@ -722,7 +740,7 @@ export default function MiningCard({
               <div className="mt-5 flex gap-3">
                 <Button
                   variant="outline"
-                  className="flex-1 border-purple-700/40 bg-transparent text-xs"
+                  className="flex-1 bg-transparent text-xs rounded-xl"
                   onClick={() => setBoostStep(2)}
                 >
                   Back
@@ -752,7 +770,7 @@ export default function MiningCard({
           }
         }}
       >
-        <DialogContent className="max-w-sm sm:max-w-md bg-[#090314] border border-purple-700/40 text-white">
+        <DialogContent className="max-w-sm sm:max-w-md bg-[#0c0818] text-white">
           <DialogHeader>
             <DialogTitle className="text-lg font-semibold text-white text-center">
               Swap PiNode to PI Network
@@ -765,19 +783,19 @@ export default function MiningCard({
           <div className="space-y-4 mt-4">
             {/* Error/Success Messages */}
             {swapError && (
-              <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/40">
+              <div className="p-3 rounded-xl bg-red-500/15">
                 <p className="text-xs font-medium text-red-400">{swapError}</p>
               </div>
             )}
 
             {swapSuccess && (
-              <div className="p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/40">
+              <div className="p-3 rounded-xl bg-emerald-500/15">
                 <p className="text-xs font-medium text-emerald-400">{swapSuccess}</p>
               </div>
             )}
 
-            {/* FROM card */}
-            <div className="space-y-2 rounded-2xl bg-black/40 border border-white/10 px-4 py-3">
+            {/* FROM block – tanpa latar, menyatu dengan halaman */}
+            <div className="space-y-2 px-4 py-3">
               <div className="flex items-center justify-between text-[11px] text-[#a5b4fc] mb-1">
                 <span>From</span>
                 <span className="flex items-center gap-1">
@@ -789,7 +807,7 @@ export default function MiningCard({
               </div>
               <div className="flex items-center justify-between gap-3">
                 <div className="flex items-center gap-2">
-                  <div className="w-9 h-9 rounded-full bg-[#0b1220] border border-white/10 flex items-center justify-center">
+                  <div className="w-9 h-9 rounded-full flex items-center justify-center">
                     <img
                       src="/pi/pinodelabs.png"
                       alt="PiNode"
@@ -798,7 +816,7 @@ export default function MiningCard({
                   </div>
                   <div className="flex flex-col">
                     <span className="text-xs font-semibold text-white">PiNode</span>
-                    <span className="text-[10px] text-[#6b7280]">PINODE</span>
+                    <span className="text-[10px] text-[#a5b4fc]">PINODE</span>
                   </div>
                 </div>
                 <div className="flex-1 text-right">
@@ -813,7 +831,7 @@ export default function MiningCard({
                       setSwapSuccess("")
                     }}
                     placeholder="0.0"
-                    className="w-full bg-transparent border-none text-right text-lg font-semibold text-white placeholder:text-[#6b7280] focus-visible:ring-0 focus-visible:outline-none"
+                    className="no-selection no-spinner w-full bg-transparent border-none text-right text-lg font-semibold text-white placeholder:text-[#a5b4fc]/70 focus-visible:ring-0 focus-visible:outline-none"
                   />
                   <div className="mt-1 flex justify-end gap-2 text-[10px] text-[#a5b4fc]">
                     <button
@@ -834,13 +852,13 @@ export default function MiningCard({
 
             {/* Center swap icon */}
             <div className="flex justify-center">
-              <div className="w-8 h-8 rounded-full bg-black/60 border border-white/10 flex items-center justify-center text-white text-sm">
+              <div className="w-8 h-8 rounded-full flex items-center justify-center text-white text-sm">
                 ↕
               </div>
             </div>
 
-            {/* TO card */}
-            <div className="space-y-2 rounded-2xl bg-black/40 border border-white/10 px-4 py-3">
+            {/* TO block – tanpa latar, menyatu dengan halaman */}
+            <div className="space-y-2 px-4 py-3">
               <div className="flex items-center justify-between text-[11px] text-[#a5b4fc] mb-1">
                 <span>To</span>
                 <span className="flex items-center gap-1">
@@ -852,7 +870,7 @@ export default function MiningCard({
               </div>
               <div className="flex items-center justify-between gap-3">
                 <div className="flex items-center gap-2">
-                  <div className="w-9 h-9 rounded-full bg-[#0b1220] border border-white/10 flex items-center justify-center">
+                  <div className="w-9 h-9 rounded-full flex items-center justify-center">
                     <img
                       src="/pi/pinetwork.png"
                       alt="PI Network"
@@ -861,14 +879,17 @@ export default function MiningCard({
                   </div>
                   <div className="flex flex-col">
                     <span className="text-xs font-semibold text-white">PI Network</span>
-                    <span className="text-[10px] text-[#6b7280]">PI</span>
+                    <span className="text-[10px] text-[#a5b4fc]">PI</span>
                   </div>
                 </div>
                 <div className="flex-1 text-right">
                   <div className="text-lg font-semibold text-white">
-                    {swapAmount && Number.parseFloat(swapAmount) > 0
-                      ? (Number.parseFloat(swapAmount) / CONVERSION_RATE).toFixed(4)
-                      : "0.0000"}
+                    {(() => {
+                      const amount = swapAmount ? Number.parseFloat(swapAmount) : 0
+                      if (amount <= 0) return "0"
+                      const result = amount / CONVERSION_RATE
+                      return result.toFixed(4).replace(/\.?0+$/, "")
+                    })()}
                   </div>
                   <div className="mt-1 text-[10px] text-[#a5b4fc]">Estimated output</div>
                 </div>
@@ -889,8 +910,8 @@ export default function MiningCard({
               {isSwapping ? "Processing swap..." : "Swap now"}
             </Button>
 
-            {/* Info Card */}
-            <div className="rounded-lg bg-black/40 border border-white/10 p-3 space-y-1.5">
+            {/* Info – tanpa latar, menyatu dengan halaman */}
+            <div className="p-3 space-y-1.5">
               <h4 className="text-xs font-semibold text-white">How this swap works</h4>
               <p className="text-[10px] text-[#a5b4fc]">
                 1. Enter the amount of PiNode you want to swap (minimum 20 PiNode).

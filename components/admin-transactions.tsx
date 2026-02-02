@@ -451,7 +451,7 @@ export default function AdminTransactions() {
             className={`px-4 py-2 rounded-t-lg transition-all ${
               activeTab === "pending"
                 ? "bg-gradient-to-r from-[#fbbf24]/20 to-[#f59e0b]/20 text-[#fbbf24] border-b-2 border-[#fbbf24]"
-                : "text-[#a7a3ff] hover:text-white"
+                : "text-[#a5b4fc] hover:text-white"
             }`}
           >
             <div className="flex items-center gap-2">
@@ -464,7 +464,7 @@ export default function AdminTransactions() {
             className={`px-4 py-2 rounded-t-lg transition-all ${
               activeTab === "all"
                 ? "bg-gradient-to-r from-[#fbbf24]/20 to-[#f59e0b]/20 text-[#fbbf24] border-b-2 border-[#fbbf24]"
-                : "text-[#a7a3ff] hover:text-white"
+                : "text-[#a5b4fc] hover:text-white"
             }`}
           >
             All Transactions ({allTransactions.length})
@@ -559,7 +559,7 @@ export default function AdminTransactions() {
             )}
 
             {/* Results Count */}
-            <div className="ml-auto text-xs text-[#a7a3ff]">
+            <div className="ml-auto text-xs text-[#a5b4fc]">
               Showing {transactionsToShow.length} of {activeTab === "pending" ? pendingTransactions.length : allTransactions.length} transactions
             </div>
           </div>
@@ -568,7 +568,7 @@ export default function AdminTransactions() {
         {/* Bulk Actions - Only show for pending transactions */}
         {activeTab === "pending" && pendingTransactions.length > 0 && (
           <div className="flex items-center gap-2 p-3 rounded-lg bg-black/40 border border-white/10 backdrop-blur-2xl">
-            <span className="text-sm text-[#a7a3ff] font-medium">Bulk Actions:</span>
+            <span className="text-sm text-[#a5b4fc] font-medium">Bulk Actions:</span>
             <Button
               onClick={handleApproveAll}
               disabled={processingAll}
@@ -618,13 +618,18 @@ export default function AdminTransactions() {
       {/* Transactions List */}
       {loading ? (
         <Card className="p-8 text-center">
-          <div className="flex justify-center mb-4">
-            <NodeNetworkBackground
-              size={96}
-              showCenterLogo={true}
-              centerLogoUrl="/pi/pinetwork.png"
-              className="node-network-loading"
-            />
+          <div className="flex flex-col items-center justify-center">
+            <div className="mb-4">
+              <NodeNetworkBackground
+                size={96}
+                turbineOnly={true}
+                centerLogoUrl="/pi/pinetwork.png"
+                className="node-network-loading"
+              />
+            </div>
+            <p className="text-[#a5b4fc] text-sm font-medium animate-pulse">
+              Loading...
+            </p>
           </div>
         </Card>
       ) : transactionsToShow.length === 0 ? (
@@ -884,7 +889,7 @@ export default function AdminTransactions() {
               <CheckCircle className="w-5 h-5 text-green-400" />
               Review Transaction Approval
             </DialogTitle>
-            <DialogDescription className="text-[#c9c3ff]">
+            <DialogDescription className="text-[#a5b4fc]">
               Please review all details before approving this transaction
             </DialogDescription>
           </DialogHeader>
@@ -896,22 +901,22 @@ export default function AdminTransactions() {
                 <h4 className="text-sm font-semibold text-white mb-3">Transaction Details</h4>
                 <div className="grid grid-cols-2 gap-3 text-sm">
                   <div>
-                    <span className="text-[#a7a3ff]">Type:</span>
+                    <span className="text-[#a5b4fc]">Type:</span>
                     <span className="ml-2 text-white font-semibold capitalize">{selectedTransaction.type}</span>
                   </div>
                   <div>
-                    <span className="text-[#a7a3ff]">Amount:</span>
+                    <span className="text-[#a5b4fc]">Amount:</span>
                     <span className="ml-2 text-white font-semibold">
                       {selectedTransaction.amount.toLocaleString()} {selectedTransaction.currency}
                     </span>
                   </div>
                   <div>
-                    <span className="text-[#a7a3ff]">User:</span>
+                    <span className="text-[#a5b4fc]">User:</span>
                     <span className="ml-2 text-white">{selectedTransaction.users?.email || selectedTransaction.user_id}</span>
                   </div>
                   {selectedTransaction.network && (
                     <div>
-                      <span className="text-[#a7a3ff]">Network:</span>
+                      <span className="text-[#a5b4fc]">Network:</span>
                       <span className="ml-2 text-white">{selectedTransaction.network}</span>
                     </div>
                   )}
@@ -927,7 +932,7 @@ export default function AdminTransactions() {
                   </h4>
                   <div className="space-y-2">
                     <div className="flex justify-between items-center p-2 rounded bg-black/40">
-                      <span className="text-[#a7a3ff] text-sm">Current Balance:</span>
+                      <span className="text-[#a5b4fc] text-sm">Current Balance:</span>
                       <span className="text-white font-semibold">
                         {balancePreview.current.toFixed(4)} {balancePreview.currency}
                       </span>
@@ -970,7 +975,7 @@ export default function AdminTransactions() {
 
               {/* Description */}
               <div className="p-3 rounded-lg bg-black/60 border border-white/10">
-                <p className="text-xs text-[#a7a3ff] mb-1">Description:</p>
+                <p className="text-xs text-[#a5b4fc] mb-1">Description:</p>
                 <p className="text-sm text-white">{selectedTransaction.description}</p>
               </div>
             </div>

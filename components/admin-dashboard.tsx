@@ -89,7 +89,7 @@ export default function AdminDashboard({ onLogout }: AdminDashboardProps) {
               />
               <div className="flex flex-col">
                 <span className="text-sm font-semibold text-white">Admin Portal</span>
-                <span className="text-[10px] text-[#a7a3ff]">PiNode Labs Management</span>
+                <span className="text-[10px] text-[#a5b4fc]">PiNode Labs Management</span>
               </div>
             </div>
             <Button
@@ -122,7 +122,7 @@ export default function AdminDashboard({ onLogout }: AdminDashboardProps) {
                 className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all whitespace-nowrap ${
                   activeTab === tab.id
                     ? "bg-gradient-to-r from-[#fbbf24]/20 to-[#f59e0b]/20 text-[#fbbf24] border-b-2 border-[#fbbf24]"
-                    : "text-[#a7a3ff] hover:text-white hover:bg-black/40"
+                    : "text-[#a5b4fc] hover:text-white hover:bg-black/40"
                 }`}
               >
                 <Icon className="w-4 h-4" />
@@ -195,7 +195,7 @@ function AdminOverview({
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         <Card className="border border-white/10 bg-black/40 backdrop-blur-2xl p-6 shadow-[0_16px_45px_rgba(0,0,0,0.65)]">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-xs text-[#a7a3ff] uppercase font-medium">Total Users</span>
+            <span className="text-xs text-[#a5b4fc] uppercase font-medium">Total Users</span>
             <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-[#7dd3fc] to-[#0ea5e9] flex items-center justify-center">
               <Users className="w-5 h-5 text-white" />
             </div>
@@ -205,14 +205,14 @@ function AdminOverview({
           ) : (
             <>
               <div className="text-3xl font-bold text-white">{stats.totalUsers.toLocaleString()}</div>
-              <div className="text-xs text-[#c9c3ff] mt-2">Registered users (excluding admin)</div>
+              <div className="text-xs text-[#a5b4fc] mt-2">Registered users (excluding admin)</div>
             </>
           )}
         </Card>
 
         <Card className="border border-white/10 bg-black/40 backdrop-blur-2xl p-6 shadow-[0_16px_45px_rgba(0,0,0,0.65)]">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-xs text-[#a7a3ff] uppercase font-medium">Active Miners</span>
+            <span className="text-xs text-[#a5b4fc] uppercase font-medium">Active Miners</span>
             <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-[#fbbf24] to-[#f59e0b] flex items-center justify-center">
               <Zap className="w-5 h-5 text-white" />
             </div>
@@ -222,14 +222,14 @@ function AdminOverview({
           ) : (
             <>
               <div className="text-3xl font-bold text-white">{stats.activeMiners.toLocaleString()}</div>
-              <div className="text-xs text-[#c9c3ff] mt-2">{participationRate}% participation</div>
+              <div className="text-xs text-[#a5b4fc] mt-2">{participationRate}% participation</div>
             </>
           )}
         </Card>
 
         <Card className="border border-white/10 bg-black/40 backdrop-blur-2xl p-6 shadow-[0_16px_45px_rgba(0,0,0,0.65)]">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-xs text-[#a7a3ff] uppercase font-medium">Total Mined</span>
+            <span className="text-xs text-[#a5b4fc] uppercase font-medium">Total Mined</span>
             <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-[#10b981] to-[#059669] flex items-center justify-center">
               <TrendingUp className="w-5 h-5 text-white" />
             </div>
@@ -246,14 +246,14 @@ function AdminOverview({
                   : stats.totalMined.toFixed(0)
                 } PiNode
               </div>
-              <div className="text-xs text-[#c9c3ff] mt-2">Total from all miners</div>
+              <div className="text-xs text-[#a5b4fc] mt-2">Total from all miners</div>
             </>
           )}
         </Card>
 
         <Card className="border border-white/10 bg-black/40 backdrop-blur-2xl p-6 shadow-[0_16px_45px_rgba(0,0,0,0.65)]">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-xs text-[#a7a3ff] uppercase font-medium">Exchanged Volume</span>
+            <span className="text-xs text-[#a5b4fc] uppercase font-medium">Exchanged Volume</span>
             <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-[#a78bfa] to-[#8b5cf6] flex items-center justify-center">
               <BarChart3 className="w-5 h-5 text-white" />
             </div>
@@ -270,14 +270,14 @@ function AdminOverview({
                   : stats.totalExchanged.toFixed(2)
                 } PI
               </div>
-              <div className="text-xs text-[#c9c3ff] mt-2">Completed exchanges</div>
+              <div className="text-xs text-[#a5b4fc] mt-2">Completed exchanges</div>
             </>
           )}
         </Card>
 
         <Card className="border border-white/10 bg-black/40 backdrop-blur-2xl p-6 shadow-[0_16px_45px_rgba(0,0,0,0.65)]">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-xs text-[#a7a3ff] uppercase font-medium">Total Referrals</span>
+            <span className="text-xs text-[#a5b4fc] uppercase font-medium">Total Referrals</span>
             <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-[#ec4899] to-[#be185d] flex items-center justify-center">
               <Users className="w-5 h-5 text-white" />
             </div>
@@ -287,14 +287,14 @@ function AdminOverview({
           ) : (
             <>
               <div className="text-3xl font-bold text-white">{stats.totalReferrals.toLocaleString()}</div>
-              <div className="text-xs text-[#c9c3ff] mt-2">Active referral links</div>
+              <div className="text-xs text-[#a5b4fc] mt-2">Active referral links</div>
             </>
           )}
         </Card>
 
         <Card className="border border-white/10 bg-black/40 backdrop-blur-2xl p-6 shadow-[0_16px_45px_rgba(0,0,0,0.65)]">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-xs text-[#a7a3ff] uppercase font-medium">Platform Revenue</span>
+            <span className="text-xs text-[#a5b4fc] uppercase font-medium">Platform Revenue</span>
             <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-[#f59e0b] to-[#d97706] flex items-center justify-center">
               <TrendingUp className="w-5 h-5 text-white" />
             </div>
@@ -311,7 +311,7 @@ function AdminOverview({
                   : stats.platformFee.toFixed(2)
                 } PiNode
               </div>
-              <div className="text-xs text-[#c9c3ff] mt-2">Estimated from withdrawals</div>
+              <div className="text-xs text-[#a5b4fc] mt-2">Estimated from withdrawals</div>
             </>
           )}
         </Card>
@@ -321,7 +321,7 @@ function AdminOverview({
       <Card className="border border-white/10 bg-black/40 backdrop-blur-2xl p-6 shadow-[0_16px_45px_rgba(0,0,0,0.65)]">
         <h3 className="text-lg font-semibold mb-4 text-white">Platform Activity</h3>
         <div className="h-64 bg-black/60 rounded-lg flex items-center justify-center border border-white/10">
-          <p className="text-[#a7a3ff]">Real-time data displayed above. Charts can be added here.</p>
+          <p className="text-[#a5b4fc]">Real-time data displayed above. Charts can be added here.</p>
         </div>
       </Card>
     </div>
@@ -365,7 +365,7 @@ function AdminUsers({ stats }: { stats: any }) {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h2 className="text-2xl font-bold text-white">User Management</h2>
-        <div className="text-sm text-[#a7a3ff]">
+        <div className="text-sm text-[#a5b4fc]">
           Total: {users.length} users
         </div>
       </div>
@@ -386,22 +386,22 @@ function AdminUsers({ stats }: { stats: any }) {
           <h3 className="text-lg font-semibold mb-4 text-white">Users List</h3>
           {loading ? (
             <div className="text-center py-8">
-              <div className="text-[#a7a3ff]">Loading users...</div>
+              <div className="text-[#a5b4fc]">Loading users...</div>
             </div>
           ) : filteredUsers.length === 0 ? (
             <div className="text-center py-8">
-              <div className="text-[#a7a3ff]">No users found</div>
+              <div className="text-[#a5b4fc]">No users found</div>
             </div>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead className="border-b border-white/10">
                   <tr>
-                    <th className="px-4 py-3 text-left font-medium text-[#a7a3ff]">Email</th>
-                    <th className="px-4 py-3 text-left font-medium text-[#a7a3ff]">PI Balance</th>
-                    <th className="px-4 py-3 text-left font-medium text-[#a7a3ff]">PiNode Balance</th>
-                    <th className="px-4 py-3 text-left font-medium text-[#a7a3ff]">Joined</th>
-                    <th className="px-4 py-3 text-left font-medium text-[#a7a3ff]">Status</th>
+                    <th className="px-4 py-3 text-left font-medium text-[#a5b4fc]">Email</th>
+                    <th className="px-4 py-3 text-left font-medium text-[#a5b4fc]">PI Balance</th>
+                    <th className="px-4 py-3 text-left font-medium text-[#a5b4fc]">PiNode Balance</th>
+                    <th className="px-4 py-3 text-left font-medium text-[#a5b4fc]">Joined</th>
+                    <th className="px-4 py-3 text-left font-medium text-[#a5b4fc]">Status</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -414,7 +414,7 @@ function AdminUsers({ stats }: { stats: any }) {
                       <td className="px-4 py-3 text-[#7dd3fc] font-semibold">
                         {Math.floor(Number(user.bxt_balance || 0)).toLocaleString()} PiNode
                       </td>
-                      <td className="px-4 py-3 text-[#c9c3ff] text-xs">
+                      <td className="px-4 py-3 text-[#a5b4fc] text-xs">
                         {new Date(user.created_at).toLocaleDateString()}
                       </td>
                       <td className="px-4 py-3">
@@ -445,11 +445,11 @@ function AdminMining({ stats }: { stats: any }) {
           <div className="space-y-4">
             <div className="p-4 rounded-lg bg-black/60 border border-white/10">
               <div className="flex justify-between items-center mb-2">
-                <span className="text-sm text-[#a7a3ff]">Active Miners</span>
+                <span className="text-sm text-[#a5b4fc]">Active Miners</span>
                 <span className="text-xl font-bold text-white">{stats.activeMiners.toLocaleString()}</span>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-sm text-[#a7a3ff]">Total Mined</span>
+                <span className="text-sm text-[#a5b4fc]">Total Mined</span>
                 <span className="text-lg font-semibold text-[#fbbf24]">
                   {stats.totalMined >= 1000000 
                     ? `${(stats.totalMined / 1000000).toFixed(2)}M`
@@ -462,7 +462,7 @@ function AdminMining({ stats }: { stats: any }) {
             </div>
             <div className="p-4 rounded-lg bg-black/60 border border-white/10">
               <div className="flex justify-between items-center">
-                <span className="text-sm text-[#a7a3ff]">Participation Rate</span>
+                <span className="text-sm text-[#a5b4fc]">Participation Rate</span>
                 <span className="text-lg font-semibold text-[#7dd3fc]">
                   {stats.totalUsers > 0 
                     ? `${((stats.activeMiners / stats.totalUsers) * 100).toFixed(1)}%`
@@ -478,15 +478,15 @@ function AdminMining({ stats }: { stats: any }) {
           <h3 className="text-lg font-semibold mb-4 text-white">Platform Metrics</h3>
           <div className="space-y-3 text-sm">
             <div className="flex justify-between p-3 rounded-lg bg-black/60 border border-white/10">
-              <span className="text-[#a7a3ff]">Total Users</span>
+              <span className="text-[#a5b4fc]">Total Users</span>
               <span className="text-white font-semibold">{stats.totalUsers.toLocaleString()}</span>
             </div>
             <div className="flex justify-between p-3 rounded-lg bg-black/60 border border-white/10">
-              <span className="text-[#a7a3ff]">Total Referrals</span>
+              <span className="text-[#a5b4fc]">Total Referrals</span>
               <span className="text-white font-semibold">{stats.totalReferrals.toLocaleString()}</span>
             </div>
             <div className="flex justify-between p-3 rounded-lg bg-black/60 border border-white/10">
-              <span className="text-[#a7a3ff]">Exchanged Volume</span>
+              <span className="text-[#a5b4fc]">Exchanged Volume</span>
               <span className="text-[#fbbf24] font-semibold">
                 {stats.totalExchanged >= 1000000
                   ? `${(stats.totalExchanged / 1000000).toFixed(2)}M`
@@ -497,7 +497,7 @@ function AdminMining({ stats }: { stats: any }) {
               </span>
             </div>
             <div className="flex justify-between p-3 rounded-lg bg-black/60 border border-white/10">
-              <span className="text-[#a7a3ff]">Platform Revenue</span>
+              <span className="text-[#a5b4fc]">Platform Revenue</span>
               <span className="text-[#7dd3fc] font-semibold">
                 {stats.platformFee >= 1000000
                   ? `${(stats.platformFee / 1000000).toFixed(2)}M`
@@ -571,7 +571,7 @@ function AdminSettings() {
       <Card className="border border-white/10 bg-black/40 backdrop-blur-2xl p-6 shadow-[0_16px_45px_rgba(0,0,0,0.65)] max-w-2xl">
         {isLoading ? (
           <div className="text-center py-8">
-            <div className="text-[#a7a3ff]">Loading settings...</div>
+            <div className="text-[#a5b4fc]">Loading settings...</div>
           </div>
         ) : (
           <div className="space-y-6">
@@ -591,7 +591,7 @@ function AdminSettings() {
                 className="w-full px-4 py-2 rounded-lg bg-black/60 border border-white/10 text-white placeholder-[#a7a3ff] focus:outline-none focus:ring-2 focus:ring-[#fbbf24]/40"
                 placeholder="Enter minimum withdraw amount (minimum 100 PI)"
               />
-              <p className="text-xs text-[#c9c3ff] mt-2">
+              <p className="text-xs text-[#a5b4fc] mt-2">
                 Current minimum withdrawal amount in PI Network. Users cannot withdraw less than this amount. 
                 <span className="block mt-1 font-semibold text-[#fbbf24]">Minimum allowed: 100 PI</span>
               </p>

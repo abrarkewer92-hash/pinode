@@ -1,12 +1,11 @@
 "use client"
 
 import { useState, useMemo } from "react"
-import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { createTransaction } from "@/lib/supabase-client"
 import DepositHistory from "./deposit-history"
-import { ArrowLeftRight, Wallet, Coins } from "lucide-react"
+import { ArrowLeftRight, Wallet } from "lucide-react"
 
 interface ExchangeSectionProps {
   bxtBalance: number
@@ -82,6 +81,15 @@ export default function ExchangeSection({
       // Notify parent so MiningDashboard can update balances consistently
       await onExchange(amount, piReceived)
 
+      // Send Telegram notification
+      try {
+        const { notifyBalanceUpdate } = await import('@/lib/telegram-bot-helper')
+        await notifyBalanceUpdate(userId, 'exchange', piReceived)
+      } catch (telegramError) {
+        // Don't fail exchange if Telegram notification fails
+        console.warn("Failed to send Telegram notification:", telegramError)
+      }
+
       setSuccess(
         `Successfully exchanged ${Math.floor(amount).toLocaleString()} PiNode into ${piReceived.toFixed(
           4,
@@ -98,66 +106,65 @@ export default function ExchangeSection({
 
   return (
     <div className="space-y-4">
-      {/* Header Card */}
-      <Card className="border border-white/10 bg-black/40 backdrop-blur-2xl p-4 space-y-3 shadow-[0_16px_45px_rgba(0,0,0,0.65)]">
+      {/* Header – menyatu satu latar */}
+      <div className="p-4 space-y-3">
         <div className="flex items-center gap-3">
-          <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#a78bfa] to-[#8b5cf6] flex items-center justify-center">
+          <div className="w-12 h-12 rounded-xl bg-[#1e1638] flex items-center justify-center">
             <ArrowLeftRight className="w-6 h-6 text-white" />
           </div>
           <div className="flex-1">
             <h2 className="text-lg font-semibold text-white">Swap PiNode</h2>
-            <p className="text-xs text-[#c9c3ff]">
+            <p className="text-xs text-[#a5b4fc]">
               Convert PiNode to PI Network
             </p>
           </div>
         </div>
-        <div className="grid grid-cols-2 gap-3 pt-2 border-t border-white/10">
+        <div className="grid grid-cols-2 gap-3 pt-3">
           <div>
-            <p className="text-[10px] text-[#a7a3ff] mb-1">PiNode Balance</p>
+            <p className="text-[10px] text-[#a5b4fc] mb-1">PiNode Balance</p>
             <p className="text-sm font-semibold text-white">
               {Math.floor(pinodeBalance).toLocaleString()}{" "}
-              <span className="text-xs text-[#a7a3ff]">PiNode</span>
+              <span className="text-xs text-[#a5b4fc]">PiNode</span>
             </p>
           </div>
           <div>
-            <p className="text-[10px] text-[#a7a3ff] mb-1">PI Network Wallet</p>
+            <p className="text-[10px] text-[#a5b4fc] mb-1">PI Network Wallet</p>
             <p className="text-sm font-semibold text-white">
               {piNetworkWalletBalance.toFixed(4)}{" "}
-              <span className="text-xs text-[#a7a3ff]">PI</span>
+              <span className="text-xs text-[#a5b4fc]">PI</span>
             </p>
           </div>
         </div>
-      </Card>
+      </div>
 
-      {/* Alerts */}
+      {/* Alerts – borderless */}
       {error && (
-        <Card className="border border-red-500/40 bg-red-500/10 backdrop-blur-2xl p-3 shadow-[0_16px_45px_rgba(0,0,0,0.65)]">
+        <div className="rounded-xl bg-red-500/10 p-3">
           <p className="text-xs font-medium text-red-400">{error}</p>
-        </Card>
+        </div>
       )}
 
       {success && (
-        <Card className="border border-emerald-500/40 bg-emerald-500/10 backdrop-blur-2xl p-3 shadow-[0_16px_45px_rgba(0,0,0,0.65)]">
+        <div className="rounded-xl bg-emerald-500/10 p-3">
           <p className="text-xs font-medium text-emerald-400">{success}</p>
-        </Card>
+        </div>
       )}
 
-      {/* Main swap form - match Swap PiNode modal style */}
-      <Card className="border border-white/10 bg-black/40 backdrop-blur-2xl p-4 space-y-3 shadow-[0_16px_45px_rgba(0,0,0,0.65)]">
-        <div className="flex items-center gap-2 mb-2">
-          <Coins className="w-4 h-4 text-[#c9c3ff]" />
+      {/* Main swap form – menyatu latar */}
+      <div className="p-4 space-y-3">
+        <div className="mb-2">
           <p className="text-sm font-semibold text-white">
             Swap PiNode to PI Network
           </p>
         </div>
-        <p className="text-xs text-[#c9c3ff] mb-3">
+        <p className="text-xs text-[#a5b4fc] mb-3">
           Convert your mined PiNode into PI Network balance in your wallet.
         </p>
 
         <div className="space-y-4">
-          {/* FROM card */}
-          <div className="space-y-2 rounded-2xl bg-black/40 border border-white/10 px-4 py-3">
-            <div className="flex items-center justify-between text-[11px] text-[#a7a3ff] mb-1">
+          {/* FROM block */}
+          <div className="space-y-2 rounded-2xl bg-white/5 px-4 py-3">
+            <div className="flex items-center justify-between text-[11px] text-[#a5b4fc] mb-1">
               <span>From</span>
               <span className="flex items-center gap-1">
                 Balance:
@@ -168,7 +175,7 @@ export default function ExchangeSection({
             </div>
             <div className="flex items-center justify-between gap-3">
               <div className="flex items-center gap-2">
-                <div className="w-9 h-9 rounded-full bg-[#0b1220] border border-white/10 flex items-center justify-center">
+                <div className="w-9 h-9 rounded-full bg-white/5 flex items-center justify-center">
                   <img
                     src="/pi/pinodelabs.png"
                     alt="PiNode"
@@ -177,7 +184,7 @@ export default function ExchangeSection({
                 </div>
                 <div className="flex flex-col">
                   <span className="text-xs font-semibold text-white">PiNode</span>
-                  <span className="text-[10px] text-[#6b7280]">PINODE</span>
+                  <span className="text-[10px] text-[#a5b4fc]">PINODE</span>
                 </div>
               </div>
               <div className="flex-1 text-right">
@@ -191,9 +198,9 @@ export default function ExchangeSection({
                     setSuccess("")
                   }}
                   placeholder="0.0"
-                  className="w-full bg-transparent border-none text-right text-lg font-semibold text-white placeholder:text-[#6b7280] focus-visible:ring-0 focus-visible:outline-none"
+                  className="no-selection no-spinner w-full bg-transparent border-none text-right text-lg font-semibold text-white placeholder:text-[#a5b4fc]/70 focus-visible:ring-0 focus-visible:outline-none"
                 />
-                <div className="mt-1 flex justify-end gap-2 text-[10px] text-[#a7a3ff]">
+                <div className="mt-1 flex justify-end gap-2 text-[10px] text-[#a5b4fc]">
                   <button
                     type="button"
                     className="px-2 py-0.5 rounded-full bg-white/5 hover:bg-white/10"
@@ -212,14 +219,14 @@ export default function ExchangeSection({
 
           {/* Center swap icon */}
           <div className="flex justify-center">
-            <div className="w-8 h-8 rounded-full bg-black/60 border border-white/10 flex items-center justify-center text-white text-sm">
+            <div className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center text-white text-sm">
               ↕
             </div>
           </div>
 
-          {/* TO card */}
-          <div className="space-y-2 rounded-2xl bg-black/40 border border-white/10 px-4 py-3">
-            <div className="flex items-center justify-between text-[11px] text-[#a7a3ff] mb-1">
+          {/* TO block */}
+          <div className="space-y-2 rounded-2xl bg-white/5 px-4 py-3">
+            <div className="flex items-center justify-between text-[11px] text-[#a5b4fc] mb-1">
               <span>To</span>
               <span className="flex items-center gap-1">
                 Wallet:
@@ -230,7 +237,7 @@ export default function ExchangeSection({
             </div>
             <div className="flex items-center justify-between gap-3">
               <div className="flex items-center gap-2">
-                <div className="w-9 h-9 rounded-full bg-[#0b1220] border border-white/10 flex items-center justify-center">
+                <div className="w-9 h-9 rounded-full bg-white/5 flex items-center justify-center">
                   <img
                     src="/pi/pinetwork.png"
                     alt="PI Network"
@@ -239,14 +246,14 @@ export default function ExchangeSection({
                 </div>
                 <div className="flex flex-col">
                   <span className="text-xs font-semibold text-white">PI Network</span>
-                  <span className="text-[10px] text-[#6b7280]">PI</span>
+                  <span className="text-[10px] text-[#a5b4fc]">PI</span>
                 </div>
               </div>
               <div className="flex-1 text-right">
                 <div className="text-lg font-semibold text-white">
-                  {piAmount > 0 ? piAmount.toFixed(4) : "0.0000"}
+                  {piAmount > 0 ? piAmount.toFixed(4).replace(/\.?0+$/, "") : "0"}
                 </div>
-                <div className="mt-1 text-[10px] text-[#a7a3ff]">Estimated output</div>
+                <div className="mt-1 text-[10px] text-[#a5b4fc]">Estimated output</div>
               </div>
             </div>
           </div>
@@ -265,23 +272,23 @@ export default function ExchangeSection({
             {isExchanging ? "Processing swap..." : "Swap now"}
           </Button>
         </div>
-      </Card>
+      </div>
 
-      {/* How it works */}
-      <Card className="border border-white/10 bg-black/40 backdrop-blur-2xl p-4 space-y-2 shadow-[0_16px_45px_rgba(0,0,0,0.65)]">
+      {/* How it works – menyatu latar */}
+      <div className="p-4 space-y-2">
         <h4 className="text-sm font-semibold text-white">How this swap works</h4>
         <div className="space-y-1.5">
-          <p className="text-xs text-[#c9c3ff]">
+          <p className="text-xs text-[#a5b4fc]">
             1. Enter the amount of PiNode you want to swap (minimum 20 PiNode).
           </p>
-          <p className="text-xs text-[#c9c3ff]">
+          <p className="text-xs text-[#a5b4fc]">
             2. 20 PiNode ≈ 1 PI Network (100 PiNode ≈ 5 PI Network).
           </p>
-          <p className="text-xs text-[#c9c3ff]">
+          <p className="text-xs text-[#a5b4fc]">
             3. After a successful swap, your PI Network wallet balance increases and your PiNode balance decreases.
           </p>
         </div>
-      </Card>
+      </div>
 
       {/* Swap history – simple list following same card style */}
       <DepositHistory userId={userId} mode="swap" />

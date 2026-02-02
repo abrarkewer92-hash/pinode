@@ -1,7 +1,6 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { AlertCircle, Check, Wallet, ArrowUpRight } from "lucide-react"
 import { createTransaction, getTransactions, getMinWithdraw } from "@/lib/supabase-client"
@@ -142,54 +141,54 @@ export default function WalletSection({ userId = "user-1", currentUSDTBalance, o
 
   return (
     <div className="space-y-4">
-      {/* Header Card */}
-      <Card className="border border-white/10 bg-black/40 backdrop-blur-2xl p-4 space-y-3 shadow-[0_16px_45px_rgba(0,0,0,0.65)]">
+      {/* Header – menyatu satu latar */}
+      <div className="p-4 space-y-3">
         <div className="flex items-center gap-3">
-          <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#10b981] to-[#059669] flex items-center justify-center">
+          <div className="w-12 h-12 rounded-xl bg-[#0d2818] flex items-center justify-center">
             <Wallet className="w-6 h-6 text-white" />
           </div>
           <div className="flex-1">
             <h2 className="text-lg font-semibold text-white">Wallet</h2>
-            <p className="text-xs text-[#c9c3ff]">
+            <p className="text-xs text-[#a5b4fc]">
               Withdraw PI Network to your wallet
             </p>
           </div>
         </div>
-        <div className="pt-2 border-t border-white/10">
-          <p className="text-[10px] text-[#a7a3ff] mb-1">PI Network Balance</p>
+        <div className="pt-3">
+          <p className="text-[10px] text-[#a5b4fc] mb-1">PI Network Balance</p>
           <p className="text-lg font-semibold text-white">
             {currentUSDTBalance.toFixed(4)}{" "}
-            <span className="text-sm text-[#a7a3ff]">PI</span>
+            <span className="text-sm text-[#a5b4fc]">PI</span>
           </p>
         </div>
-      </Card>
+      </div>
 
       {/* Alerts */}
       {error && (
-        <Card className="border border-red-500/40 bg-red-500/10 backdrop-blur-2xl p-3 shadow-[0_16px_45px_rgba(0,0,0,0.65)]">
+        <div className="rounded-xl bg-red-500/10 p-3">
           <div className="flex items-center gap-2">
             <AlertCircle className="w-4 h-4 text-red-400 flex-shrink-0" />
             <p className="text-xs font-medium text-red-400">{error}</p>
           </div>
-        </Card>
+        </div>
       )}
 
       {success && (
-        <Card className="border border-emerald-500/40 bg-emerald-500/10 backdrop-blur-2xl p-3 shadow-[0_16px_45px_rgba(0,0,0,0.65)]">
+        <div className="rounded-xl bg-emerald-500/10 p-3">
           <div className="flex items-center gap-2">
             <Check className="w-4 h-4 text-emerald-400 flex-shrink-0" />
             <p className="text-xs font-medium text-emerald-400">{success}</p>
           </div>
-        </Card>
+        </div>
       )}
 
-      {/* Withdraw PI Network card */}
-      <Card className="border border-white/10 bg-black/40 backdrop-blur-2xl p-4 space-y-3 shadow-[0_16px_45px_rgba(0,0,0,0.65)]">
+      {/* Withdraw PI Network – menyatu latar */}
+      <div className="p-4 space-y-3">
         <div className="flex items-center gap-2 mb-2">
-          <ArrowUpRight className="w-4 h-4 text-[#c9c3ff]" />
+          <ArrowUpRight className="w-4 h-4 text-[#a5b4fc]" />
           <p className="text-sm font-semibold text-white">Withdraw PI Network</p>
         </div>
-        <p className="text-xs text-[#c9c3ff] mb-3">
+        <p className="text-xs text-[#a5b4fc] mb-3">
           Enter the PI amount and your PI Network address to request a withdrawal.
         </p>
 
@@ -208,13 +207,13 @@ export default function WalletSection({ userId = "user-1", currentUSDTBalance, o
                 setWithdrawalAmount(e.target.value)
                 setError("")
               }}
-              className="w-full px-3 py-2 rounded-lg bg-black/60 border border-white/10 text-xs text-white placeholder-[#a7a3ff] focus:outline-none focus:ring-2 focus:ring-[#10b981]/40"
+              className="w-full px-3 py-2 rounded-xl bg-white/5 text-xs text-white placeholder-[#a7a3ff] focus:outline-none focus:ring-2 focus:ring-[#10b981]/40"
             />
             <div className="flex items-center justify-between mt-1">
-              <span className="text-[11px] text-[#a7a3ff]">
+              <span className="text-[11px] text-[#a5b4fc]">
                 Min: {minWithdraw} PI
               </span>
-              <span className="text-[11px] text-[#a7a3ff]">
+              <span className="text-[11px] text-[#a5b4fc]">
                 Balance: <span className="text-white font-semibold">{currentUSDTBalance.toFixed(4)} PI</span>
               </span>
             </div>
@@ -232,9 +231,9 @@ export default function WalletSection({ userId = "user-1", currentUSDTBalance, o
                 setWithdrawalAddress(e.target.value)
                 setError("")
               }}
-              className="w-full px-3 py-2 rounded-lg bg-black/60 border border-white/10 text-[11px] text-white placeholder-[#a7a3ff] focus:outline-none focus:ring-2 focus:ring-[#10b981]/40 font-mono"
+              className="w-full px-3 py-2 rounded-xl bg-white/5 text-[11px] text-white placeholder-[#a7a3ff] focus:outline-none focus:ring-2 focus:ring-[#10b981]/40 font-mono"
             />
-            <p className="text-[10px] text-[#a7a3ff] mt-1">
+            <p className="text-[10px] text-[#a5b4fc] mt-1">
               Make sure this address belongs to your official PI Network wallet. Withdrawals
               cannot be reversed.
             </p>
@@ -253,7 +252,7 @@ export default function WalletSection({ userId = "user-1", currentUSDTBalance, o
         >
           Request withdrawal
         </Button>
-      </Card>
+      </div>
 
       {/* Withdraw-only Transaction History (simple) */}
       <DepositHistory userId={userId} mode="withdraw" />

@@ -1,10 +1,10 @@
 "use client"
 
 import { useState } from "react"
-import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { useReferralSystem } from "@/hooks/use-referral-system"
-import { Users, Copy, CheckCircle2, Gift } from "lucide-react"
+import { useTelegramWebApp, TelegramWebApp } from "@/lib/telegram-webapp"
+import { Users, Copy, CheckCircle2, Gift, Share2 } from "lucide-react"
 
 interface ReferralSectionProps {
   userId?: string
@@ -13,6 +13,7 @@ interface ReferralSectionProps {
 
 export default function ReferralSection({ userId = "user-1", onBonusEarned }: ReferralSectionProps) {
   const referral = useReferralSystem({ userId })
+  const { isInTelegram, webApp } = useTelegramWebApp()
   const [copied, setCopied] = useState(false)
   const [isClaiming, setIsClaiming] = useState(false)
   const [claimMessage, setClaimMessage] = useState("")
@@ -20,7 +21,21 @@ export default function ReferralSection({ userId = "user-1", onBonusEarned }: Re
   const handleCopy = () => {
     navigator.clipboard.writeText(referral.getReferralLink())
     setCopied(true)
+    if (webApp) {
+      webApp.hapticFeedback('light')
+    }
     setTimeout(() => setCopied(false), 2000)
+  }
+
+  const handleShare = () => {
+    if (isInTelegram && webApp) {
+      // Use Telegram share functionality
+      webApp.shareReferralLink(referral.getReferralLink(), referral.referralCode)
+      webApp.hapticFeedback('medium')
+    } else {
+      // Fallback: copy to clipboard
+      handleCopy()
+    }
   }
 
   const handleClaimBonus = async () => {
@@ -46,50 +61,50 @@ export default function ReferralSection({ userId = "user-1", onBonusEarned }: Re
 
   return (
     <div className="space-y-4">
-      {/* Header Card */}
-      <Card className="border border-white/10 bg-black/40 backdrop-blur-2xl p-4 space-y-3 shadow-[0_16px_45px_rgba(0,0,0,0.65)]">
+      {/* Header – menyatu satu latar */}
+      <div className="p-4 space-y-3">
         <div className="flex items-center gap-3">
-          <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#fbbf24] to-[#f59e0b] flex items-center justify-center">
+          <div className="w-12 h-12 rounded-xl bg-[#2d1f0a] flex items-center justify-center">
             <Users className="w-6 h-6 text-white" />
           </div>
           <div className="flex-1">
             <h2 className="text-lg font-semibold text-white">Referral Program</h2>
-            <p className="text-xs text-[#c9c3ff]">
+            <p className="text-xs text-[#a5b4fc]">
               Invite friends and earn PiNode rewards
             </p>
           </div>
         </div>
-        <div className="grid grid-cols-3 gap-3 pt-2 border-t border-white/10">
+        <div className="grid grid-cols-3 gap-3 pt-3">
           <div>
-            <p className="text-[10px] text-[#a7a3ff] mb-1">Total Referrals</p>
+            <p className="text-[10px] text-[#a5b4fc] mb-1">Total Referrals</p>
             <p className="text-sm font-semibold text-white">
               {referral.totalReferrals}
             </p>
           </div>
           <div>
-            <p className="text-[10px] text-[#a7a3ff] mb-1">PiNode Earned</p>
+            <p className="text-[10px] text-[#a5b4fc] mb-1">PiNode Earned</p>
             <p className="text-sm font-semibold text-white">
               {referral.totalBonusEarned.toLocaleString()}
             </p>
           </div>
           <div>
-            <p className="text-[10px] text-[#a7a3ff] mb-1">Pending</p>
+            <p className="text-[10px] text-[#a5b4fc] mb-1">Pending</p>
             <p className="text-sm font-semibold text-[#fbbf24]">
               {referral.pendingBonus.toLocaleString()}
             </p>
           </div>
         </div>
-      </Card>
+      </div>
 
-      {/* Referral Link Card */}
-      <Card className="border border-white/10 bg-black/40 backdrop-blur-2xl p-4 space-y-3 shadow-[0_16px_45px_rgba(0,0,0,0.65)]">
+      {/* Referral Link – menyatu latar */}
+      <div className="p-4 space-y-3">
         <div className="flex items-center gap-2 mb-2">
-          <Copy className="w-4 h-4 text-[#c9c3ff]" />
+          <Copy className="w-4 h-4 text-[#a5b4fc]" />
           <p className="text-sm font-semibold text-white">
             Referral Link
           </p>
         </div>
-        <p className="text-xs text-[#c9c3ff] mb-3">
+        <p className="text-xs text-[#a5b4fc] mb-3">
           Share this link with your friends. Every active friend gives you{" "}
           <span className="font-semibold text-[#fbbf24]">100 PiNode (≈ 5 PI)</span>.
         </p>
@@ -98,41 +113,51 @@ export default function ReferralSection({ userId = "user-1", onBonusEarned }: Re
             type="text"
             value={referral.getReferralLink()}
             readOnly
-            className="flex-1 px-3 py-2 rounded-lg bg-black/60 border border-white/10 text-xs text-white font-mono placeholder-[#a7a3ff] focus:outline-none focus:ring-2 focus:ring-[#fbbf24]/40"
+            className="flex-1 px-3 py-2 rounded-xl bg-white/5 text-xs text-white font-mono placeholder-[#a7a3ff] focus:outline-none focus:ring-2 focus:ring-[#fbbf24]/40"
           />
-          <Button
-            onClick={handleCopy}
-            className={`gap-1.5 px-4 text-xs font-semibold h-9 ${
-              copied
-                ? "bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white"
-                : "bg-gradient-to-r from-[#fbbf24] to-[#f59e0b] hover:from-[#fcd34d] hover:to-[#fbbf24] text-white"
-            }`}
-          >
-            {copied ? (
-              <>
-                <CheckCircle2 className="w-3.5 h-3.5" />
-                <span>Copied</span>
-              </>
-            ) : (
-              <>
-                <Copy className="w-3.5 h-3.5" />
-                <span>Copy</span>
-              </>
-            )}
-          </Button>
+          {isInTelegram ? (
+            <Button
+              onClick={handleShare}
+              className="gap-1.5 px-4 text-xs font-semibold h-9 bg-gradient-to-r from-[#0088cc] to-[#0066aa] hover:from-[#0099dd] hover:to-[#0088cc] text-white"
+            >
+              <Share2 className="w-3.5 h-3.5" />
+              <span>Share</span>
+            </Button>
+          ) : (
+            <Button
+              onClick={handleCopy}
+              className={`gap-1.5 px-4 text-xs font-semibold h-9 ${
+                copied
+                  ? "bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white"
+                  : "bg-gradient-to-r from-[#fbbf24] to-[#f59e0b] hover:from-[#fcd34d] hover:to-[#fbbf24] text-white"
+              }`}
+            >
+              {copied ? (
+                <>
+                  <CheckCircle2 className="w-3.5 h-3.5" />
+                  <span>Copied</span>
+                </>
+              ) : (
+                <>
+                  <Copy className="w-3.5 h-3.5" />
+                  <span>Copy</span>
+                </>
+              )}
+            </Button>
+          )}
         </div>
-      </Card>
+      </div>
 
-      {/* Claim PiNode Card */}
+      {/* Claim PiNode – menyatu latar */}
       {referral.pendingBonus > 0 && (
-        <Card className="border border-white/10 bg-black/40 backdrop-blur-2xl p-4 space-y-3 shadow-[0_16px_45px_rgba(0,0,0,0.65)]">
+        <div className="p-4 space-y-3">
           <div className="flex items-center gap-2 mb-2">
-            <Gift className="w-4 h-4 text-[#c9c3ff]" />
+            <Gift className="w-4 h-4 text-[#a5b4fc]" />
             <p className="text-sm font-semibold text-white">
               Claim Referral PiNode
             </p>
           </div>
-          <p className="text-xs text-[#c9c3ff] mb-3">
+          <p className="text-xs text-[#a5b4fc] mb-3">
             You have{" "}
             <span className="font-semibold text-[#fbbf24]">
               {referral.pendingBonus.toLocaleString()} PiNode
@@ -157,24 +182,24 @@ export default function ReferralSection({ userId = "user-1", onBonusEarned }: Re
           >
             {isClaiming ? "Claiming..." : "Claim PiNode"}
           </Button>
-        </Card>
+        </div>
       )}
 
-      {/* How It Works */}
-      <Card className="border border-white/10 bg-black/40 backdrop-blur-2xl p-4 space-y-2 shadow-[0_16px_45px_rgba(0,0,0,0.65)]">
+      {/* How It Works – menyatu latar */}
+      <div className="p-4 space-y-2">
         <h4 className="text-sm font-semibold text-white">How it works</h4>
         <div className="space-y-1.5">
-          <p className="text-xs text-[#c9c3ff]">
+          <p className="text-xs text-[#a5b4fc]">
             1. Share your referral link with friends.
           </p>
-          <p className="text-xs text-[#c9c3ff]">
+          <p className="text-xs text-[#a5b4fc]">
             2. Every active friend gives you <span className="font-semibold text-[#fbbf24]">100 PiNode (≈ 5 PI)</span>.
           </p>
-          <p className="text-xs text-[#c9c3ff]">
+          <p className="text-xs text-[#a5b4fc]">
             3. Tap <span className="font-semibold text-[#fbbf24]">Claim PiNode</span> to send rewards to your PiNode balance.
           </p>
         </div>
-      </Card>
+      </div>
     </div>
   )
 }
