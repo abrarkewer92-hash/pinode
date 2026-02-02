@@ -4,6 +4,7 @@ import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { getUserById, updateUserBalance, createTransaction, getTransactions, getUserMissions, upsertUserMission } from "@/lib/supabase-client"
 import { ExternalLink, CheckCircle2, Twitter, MessageCircle } from "lucide-react"
+import { useTelegramWebApp } from "@/lib/telegram-webapp"
 
 interface Mission {
   id: string
@@ -72,6 +73,7 @@ export default function MissionsSection({ userId, onBonusEarned }: MissionsSecti
   const [completedMissions, setCompletedMissions] = useState<Set<string>>(new Set())
   const [claimedMissions, setClaimedMissions] = useState<Set<string>>(new Set())
   const [isClaiming, setIsClaiming] = useState<string | null>(null)
+  const { isInTelegram, webApp } = useTelegramWebApp()
 
   // Load mission progress from Supabase (source of truth),
   // fallback ke localStorage hanya jika DB belum punya data (untuk user lama).
@@ -127,10 +129,20 @@ export default function MissionsSection({ userId, onBonusEarned }: MissionsSecti
   }, [userId])
 
   const handleMissionClick = (mission: Mission) => {
-    // Open mission URL in new tab
-    window.open(mission.url, "_blank", "noopener,noreferrer")
-    
-    // Mark as completed after a short delay (user needs to actually complete the action)
+    // In Telegram Web App, use WebApp.openLink so the mini app stays open
+    if (isInTelegram && webApp) {
+      try {
+        webApp.openLink(mission.url)
+      } catch (e) {
+        console.warn("Failed to open mission link via Telegram WebApp, falling back to window.open:", e)
+        window.open(mission.url, "_blank", "noopener,noreferrer")
+      }
+    } else {
+      // Browser: open in new tab
+      window.open(mission.url, "_blank", "noopener,noreferrer")
+    }
+
+    // Mark as completed after a short delay (best-effort; real validation is off-chain)
     setTimeout(() => {
       const newCompleted = new Set(completedMissions)
       newCompleted.add(mission.id)
